@@ -25,7 +25,7 @@ function side(s, l) {
     <p class="label">Entries and proof</p>
     ${entries.length ? html`<div class="stack s">${entries.slice(0, 20).map((e) => {
       const p = ev.filter((x) => x.entryId === e.id && PROOF_KINDS.has(x.kind));
-      return html`<a href="#/entry/${e.id}" style="text-decoration:none" class="stack s"><span><span class="mono subtle" style="font-size:12px">${stamp(e.createdAt)}</span> <span class="mono ty-${e.type}" style="font-size:12px;font-weight:700;text-transform:uppercase;filter:brightness(.8)">${e.type}</span></span><span>${e.title || "(untitled)"}</span>
+      return html`<a href="#/entry/${e.id}" style="text-decoration:none" class="stack s"><span><span class="mono subtle" style="font-size:12px">${stamp(e.createdAt)}</span> <span class="mono ty-${e.type}" style="font-size:12px;font-weight:700;text-transform:uppercase">${e.type}</span></span><span>${e.title || "(untitled)"}</span>
         <span class="row" style="gap:4px">${p.length ? p.map((x) => html`<span class="chip">${x.kind === "measurement" ? `${x.value} ${x.unit}` : x.kind}</span>`) : html`<span class="chip dash">NEEDS PROOF</span>`}</span></a>`;
     })}</div>` : html`<p class="muted">Tag this skill on an entry to start.</p>`}
     <div class="row end"><button class="btn danger s" data-act="skill-archive" data-id="${s.id}">${icon("archive")}Archive skill</button></div>

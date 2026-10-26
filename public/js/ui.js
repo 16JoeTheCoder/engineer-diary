@@ -84,7 +84,7 @@ export function ask(title, fields, { submit = "Save", note = "" } = {}) {
         : f.type === "textarea" ? html`<textarea class="in" name="${f.name}" placeholder="${f.placeholder || ""}">${f.value ?? ""}</textarea>`
         : html`<input class="in" name="${f.name}" type="${f.type || "text"}" inputmode="${f.inputmode || ""}" value="${f.value ?? ""}" placeholder="${f.placeholder || ""}" ${f.list ? raw(`list="${esc(f.list)}"`) : ""}>`}</label>`)}
       <div class="row end"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary">${submit}</button></div></form>`;
-    const close = modal(String(body), {
+    modal(String(body), {
       label: title,
       onMount: (root, closeFn) => {
         root.querySelector("[data-f]").addEventListener("submit", (e) => {
@@ -96,6 +96,5 @@ export function ask(title, fields, { submit = "Save", note = "" } = {}) {
         new MutationObserver((_, obs) => { if (!root.isConnected) { obs.disconnect(); if (!done) resolve(null); } }).observe(document.body, { childList: true });
       },
     });
-    void close;
   });
 }

@@ -127,7 +127,7 @@ export default {
         <section class="step ok"><h2>Copy the prompt</h2>
           <p class="muted">Paste it into any AI, fill in the four lines at the top, and send.</p>
           <label class="check"><input type="checkbox" data-act="ctx" ${s.ctx ? raw("checked") : ""}>Include my inventory and skills</label>
-          <pre class="snip prompt-box">${promptText(s.ctx)}</pre>
+          <pre class="snip prompt-box" tabindex="0">${promptText(s.ctx)}</pre>
           <div class="row" style="margin-top:8px"><button class="btn primary" data-act="copy-prompt">${icon("copy")}Copy prompt</button></div>
         </section>
         <section class="step${s.raw ? " ok" : ""}"><h2>Paste the reply</h2>

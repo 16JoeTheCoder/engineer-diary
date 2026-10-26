@@ -3,7 +3,7 @@ import * as store from "./store.js";
 import * as db from "./db.js";
 import * as A from "./actions.js";
 import { html, raw, esc, dateOf, coerce } from "./util.js";
-import { icon, toast } from "./ui.js";
+import { icon, toast, modal } from "./ui.js";
 import { search } from "./search.js";
 import home from "./screens/home.js";
 import projects from "./screens/projects.js";
@@ -223,12 +223,10 @@ export function openSearch(q = "") {
 }
 
 // ---------- sheets ----------
-import { modal } from "./ui.js";
 export const TYPES = [["build", "Build"], ["fail", "Fail"], ["decision", "Decision"], ["experiment", "Experiment"], ["purchase", "Purchase"], ["reflect", "Reflect"]];
 function quickSheet() {
-  const close = modal(String(html`<div class="modal-h"><h2>Log an entry</h2><button class="btn icon ghost" data-close aria-label="Close">${icon("x")}</button></div>
+  modal(String(html`<div class="modal-h"><h2>Log an entry</h2><button class="btn icon ghost" data-close aria-label="Close">${icon("x")}</button></div>
     <div class="quick">${TYPES.map(([t, l]) => html`<a href="#/entry/new?type=${t}" class="ty-${t}" data-close>${icon(t)}${l}</a>`)}</div>`), { label: "Log an entry" });
-  void close;
 }
 function menuSheet() {
   modal(String(html`<div class="modal-h"><h2>Menu</h2><button class="btn icon ghost" data-close aria-label="Close">${icon("x")}</button></div>

@@ -52,7 +52,7 @@ export default {
     return html`
       <div class="page-h"><h1>Everything you own, <b>and everything you lost.</b></h1></div>
       <nav class="tabs" aria-label="Part status">${TABS.map(([k, l, f]) => html`<a href="#/parts?tab=${k}" ${k === def[0] ? raw('aria-current="page"') : ""}>${l} <span class="n">${parts.filter(f).length}</span></a>`)}</nav>
-      ${def[0] !== "lost" && def[0] !== "all" || !lostN ? "" : html`<a class="banner warn" href="#/parts?tab=lost" style="text-decoration:none"><span class="st warn">${lostN} part${lostN === 1 ? " is" : "s are"} lost. One tap restores each to exactly where it was.</span><span class="btn s">Open Lost</span></a>`}
+      ${def[0] !== "all" || !lostN ? "" : html`<a class="banner warn" href="#/parts?tab=lost" style="text-decoration:none"><span class="st warn">${lostN} part${lostN === 1 ? " is" : "s are"} lost. One tap restores each to exactly where it was.</span><span class="btn s">Open Lost</span></a>`}
       ${def[0] === "lost" ? "" : html`<form class="row" data-add-part style="margin-bottom:12px"><input class="in" name="n" placeholder="Add a part, then press Enter" aria-label="Add a part" style="flex:1"><button class="btn primary">Add</button></form>`}
       ${def[0] === "lost"
         ? (list.length ? html`<div class="lost-grid">${list.map(lostCard)}</div>` : html`<div class="empty">Nothing lost. Marking a part lost is one tap, and so is getting it back.</div>`)

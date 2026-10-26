@@ -1,7 +1,7 @@
 // Project page: the fuse, next smallest action, tasks by stage, BOM and budget, aims, risks, entries, exports, close.
 import * as store from "../store.js";
 import * as A from "../actions.js";
-import { html, raw, rp, stamp, today, hours, copyText, download, searchLinks, safeUrl, esc } from "../util.js";
+import { html, raw, rp, stamp, today, hours, copyText, download, searchLinks, safeUrl } from "../util.js";
 import { icon, toast, modal, modalHead, ask } from "../ui.js";
 import { STAGES, nextAction, projectCosts, projectTasks, proofByEntry, lineTotal } from "../derive.js";
 import { offerProof } from "./home.js";
@@ -118,7 +118,7 @@ export default {
 
         <section class="panel">
           <div class="panel-h"><h3>Diary</h3><a class="btn s" href="#/entry/new?project=${p.id}">Log entry</a></div>
-          ${entries.length ? html`<div class="stack s">${entries.slice(0, 12).map((e) => html`<a href="#/entry/${e.id}" class="row" style="text-decoration:none;min-height:40px"><span class="mono subtle">${stamp(e.createdAt)}</span><span class="mono ty-${e.type}" style="font-weight:700;text-transform:uppercase;font-size:12px;filter:brightness(.8)">${e.type}</span><span>${e.title || "(untitled)"}</span>${tctx.proofs.get(e.id) ? html`<span class="chip">${tctx.proofs.get(e.id)} proof</span>` : ""}</a>`)}</div>` : html`<p class="muted">No entries yet.</p>`}
+          ${entries.length ? html`<div class="stack s">${entries.slice(0, 12).map((e) => html`<a href="#/entry/${e.id}" class="row" style="text-decoration:none;min-height:40px"><span class="mono subtle">${stamp(e.createdAt)}</span><span class="mono ty-${e.type}" style="font-weight:700;text-transform:uppercase;font-size:12px">${e.type}</span><span>${e.title || "(untitled)"}</span>${tctx.proofs.get(e.id) ? html`<span class="chip">${tctx.proofs.get(e.id)} proof</span>` : ""}</a>`)}</div>` : html`<p class="muted">No entries yet.</p>`}
         </section>
       </div>
 
@@ -249,7 +249,7 @@ function briefDialog(projectId) {
   modal(String(html`${modalHead("Report brief")}
     <p class="muted">Copy this into any AI. It writes the report; Fuse never calls an AI itself.</p>
     <div class="seg" role="group" aria-label="Report style" style="margin:12px 0">${Object.entries(STYLES).map(([k, s]) => html`<button data-style="${k}" aria-pressed="${k === style}">${s.label}</button>`)}</div>
-    <pre class="snip" style="max-height:46vh;white-space:pre-wrap" id="brief-pre">${draw()}</pre>
+    <pre class="snip" style="max-height:46vh;white-space:pre-wrap" id="brief-pre" tabindex="0">${draw()}</pre>
     <div class="row end" style="margin-top:12px"><button class="btn hot" data-copy>${icon("copy")}Copy brief</button></div>`), {
     wide: true, label: "Report brief",
     onMount: (root) => {
@@ -343,4 +343,3 @@ export function completion(projectId) {
   document.body.append(el);
   el.querySelector("button").focus();
 }
-void esc;

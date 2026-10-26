@@ -1,7 +1,7 @@
 // Service worker: the app opens with no signal.
 // App shell: served from cache, refreshed in the background (stale-while-revalidate).
 // Firebase SDK from gstatic: cache-first (the URL is versioned). Firestore and auth traffic is never cached here.
-const VERSION = "fuse-v1";
+const VERSION = "fuse-v1"; // bump on deploys that change the shell list
 const SHELL = [
   "./", "index.html", "manifest.webmanifest", "css/tokens.css", "css/app.css",
   "js/app.js", "js/actions.js", "js/backup.js", "js/config.js", "js/db.js", "js/db-firestore.js", "js/db-local.js", "js/derive.js",

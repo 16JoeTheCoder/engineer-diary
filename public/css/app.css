@@ -200,8 +200,14 @@ hr.fuse-rule::before { content: ""; position: absolute; left: 0; top: -3px; widt
 .console .ts { color: var(--console-muted); }
 .console .ty { font-weight: 700; text-transform: uppercase; min-width: 9ch; }
 .console .tx { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ty-build { color: var(--t-build); } .ty-fail { color: var(--t-fail); } .ty-decision { color: var(--t-decision); }
-.ty-experiment { color: var(--t-experiment); } .ty-purchase { color: var(--t-purchase); } .ty-reflect { color: var(--t-reflect); }
+/* entry type colours: bright on dark (console, dark theme), deeper on light so text stays above 4.5:1 */
+:root, [data-theme="light"] { --tx-build: #B04000; --tx-fail: #C4153A; --tx-decision: #8A2BB8; --tx-experiment: #8F5B00; --tx-purchase: #0B5FB5; --tx-reflect: #5A44C7; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tx-build: var(--t-build); --tx-fail: var(--t-fail); --tx-decision: var(--t-decision); --tx-experiment: var(--t-experiment); --tx-purchase: var(--t-purchase); --tx-reflect: var(--t-reflect); } }
+[data-theme="dark"] { --tx-build: var(--t-build); --tx-fail: var(--t-fail); --tx-decision: var(--t-decision); --tx-experiment: var(--t-experiment); --tx-purchase: var(--t-purchase); --tx-reflect: var(--t-reflect); }
+.ty-build { color: var(--tx-build); } .ty-fail { color: var(--tx-fail); } .ty-decision { color: var(--tx-decision); }
+.ty-experiment { color: var(--tx-experiment); } .ty-purchase { color: var(--tx-purchase); } .ty-reflect { color: var(--tx-reflect); }
+.console .ty-build { color: var(--t-build); } .console .ty-fail { color: var(--t-fail); } .console .ty-decision { color: var(--t-decision); }
+.console .ty-experiment { color: var(--t-experiment); } .console .ty-purchase { color: var(--t-purchase); } .console .ty-reflect { color: var(--t-reflect); }
 .quick { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
 .quick a { display: grid; justify-items: center; gap: 6px; min-height: 76px; padding: 12px 6px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface-raised); text-decoration: none; font-weight: 500; font-size: 13px; transition: transform 140ms var(--ease-out), border-color 140ms; }
 .quick a:hover { transform: translateY(-2px); border-color: currentColor; }
@@ -219,16 +225,16 @@ hr.fuse-rule::before { content: ""; position: absolute; left: 0; top: -3px; widt
 .skill .nm { font-weight: 700; line-height: 1.2; }
 .skill .bar { height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .22); overflow: hidden; }
 .skill .bar i { display: block; height: 100%; background: #F3F2EE; }
-.skill .pc { font: 400 12px/1 var(--font-mono); opacity: .9; }
+.skill .pc { font: 400 12px/1 var(--font-mono); }
 .skill[data-l="0"] { background: transparent; border: 2px dashed var(--line-strong); color: var(--ink); }
 .skill[data-l="0"] .bar { background: var(--line); }
 .skill[data-l="1"] { background: var(--heat-1); }
 .skill[data-l="2"] { background: var(--heat-2); }
-.skill[data-l="3"] { background: var(--heat-3); }
+.skill[data-l="3"] { background: var(--heat-3); color: #0D0E10; }
 .skill[data-l="4"] { background: var(--heat-4); color: #0D0E10; }
 .skill[data-l="5"] { background: var(--heat-5); color: #0D0E10; box-shadow: 0 0 24px -4px rgba(255, 198, 41, .7); }
-.skill[data-l="4"] .bar, .skill[data-l="5"] .bar { background: rgba(13, 14, 16, .2); }
-.skill[data-l="4"] .bar i, .skill[data-l="5"] .bar i { background: #0D0E10; }
+.skill[data-l="3"] .bar, .skill[data-l="4"] .bar, .skill[data-l="5"] .bar { background: rgba(13, 14, 16, .2); }
+.skill[data-l="3"] .bar i, .skill[data-l="4"] .bar i, .skill[data-l="5"] .bar i { background: #0D0E10; }
 .rungs { display: grid; gap: 6px; padding: 0; margin: 0; list-style: none; }
 .rungs li { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start; font-size: 14px; }
 .rungs li b { font-family: var(--font-mono); font-size: 12px; display: grid; place-items: center; height: 24px; border-radius: 6px; border: 1px dashed var(--line-strong); }
