@@ -1,0 +1,14 @@
+Sure. Here is your plan:
+
+```json
+{
+  "schema": "fuse.project/1",
+  "project": { "name": "  Blink <b>test</b> ", "budgetCapIdr": "50000", },
+  "parts": [ { "ref": "p1", "name": "LED 5 mm", "qty": "10", "priceIdr": 4999.6, "tags": ["a-very-long-tag-name-that-goes-past-the-limit"] }, ],
+  "tasks": [
+    { "ref": "t1", "stage": "Build", "title": "Blink the LED, then stop", "estMinutes": 300, "partRefs": ["p1"], "mood": "happy" },
+  ],
+}
+```
+
+Let me know if you want changes.

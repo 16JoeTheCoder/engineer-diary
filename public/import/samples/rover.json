@@ -1,0 +1,33 @@
+{
+  "schema": "fuse.project/1",
+  "project": {
+    "name": "Obstacle-avoiding rover",
+    "track": "Robotics",
+    "summary": "A 4WD car that drives forward and stops before it hits a wall.",
+    "budgetCapIdr": 450000,
+    "aims": ["Stop 20 cm before a wall, three times in a row", "Explain how the ultrasonic sensor measures distance"],
+    "nextAction": "Sketch the wiring on paper."
+  },
+  "parts": [
+    { "ref": "p1", "name": "TB6612 motor driver", "category": "driver", "qty": 1, "priceIdr": 28000, "searchQuery": "TB6612FNG motor driver module", "purpose": "Lets the ESP32 control the motors", "owned": false },
+    { "ref": "p2", "name": "Multimeter", "qty": 1, "priceIdr": null, "owned": true },
+    { "ref": "p3", "name": "ESP32 DevKit V1", "category": "controller", "qty": 1, "priceIdr": 65000, "searchQuery": "ESP32 devkit v1 30 pin", "purpose": "The brain", "owned": false },
+    { "ref": "p4", "name": "HC-SR04 ultrasonic sensor", "category": "sensor", "qty": 1, "priceIdr": 12000, "searchQuery": "HC-SR04 ultrasonic", "purpose": "Measures distance to the wall", "owned": false },
+    { "ref": "p5", "name": "4WD robot chassis kit", "category": "mechanical", "qty": 1, "priceIdr": 120000, "searchQuery": "4WD smart car chassis kit TT motor", "purpose": "Body, motors and wheels", "owned": false },
+    { "ref": "p6", "name": "18650 battery holder 2S", "category": "power", "qty": 1, "priceIdr": 8000, "searchQuery": "holder baterai 18650 2 slot", "purpose": "Holds two cells in series", "owned": false }
+  ],
+  "tasks": [
+    { "ref": "t1", "stage": "plan", "title": "Sketch the wiring on paper", "estMinutes": 20, "proof": ["photo"], "skills": ["Reading datasheets"] },
+    { "ref": "t2", "stage": "plan", "title": "Read the TB6612 pin table", "estMinutes": 15, "partRefs": ["p1"], "proof": ["note"], "skills": ["Reading datasheets"], "dependsOn": ["t1"] },
+    { "ref": "t3", "stage": "order", "title": "Order the parts on Shopee", "estMinutes": 20, "proof": ["note"], "dependsOn": ["t2"] },
+    { "ref": "t4", "stage": "build", "title": "Assemble the chassis", "estMinutes": 60, "partRefs": ["p5"], "proof": ["photo"], "skills": ["Mechanical assembly"], "dependsOn": ["t3"] },
+    { "ref": "t5", "stage": "build", "title": "Safety check: battery polarity", "detail": "Check polarity with the multimeter before connecting the holder to the driver.", "estMinutes": 10, "partRefs": ["p2", "p6"], "proof": ["measurement"], "skills": ["Using a multimeter"], "dependsOn": ["t4"] },
+    { "ref": "t6", "stage": "build", "title": "Wire the driver and spin one motor", "detail": "Tie STBY high before you test.", "estMinutes": 45, "partRefs": ["p1", "p3"], "proof": ["measurement"], "skills": ["Motor drivers"], "dependsOn": ["t5"] },
+    { "ref": "t7", "stage": "build", "title": "Read distance from the HC-SR04", "estMinutes": 40, "partRefs": ["p4", "p3"], "proof": ["snippet", "measurement"], "skills": ["Ultrasonic ranging"], "dependsOn": ["t6"] },
+    { "ref": "t8", "stage": "test", "title": "Stop test against a wall, three runs", "estMinutes": 30, "proof": ["measurement", "photo"], "skills": ["Ultrasonic ranging"], "dependsOn": ["t7"] },
+    { "ref": "t9", "stage": "document", "title": "Write what you learned", "estMinutes": 30, "proof": ["note"], "dependsOn": ["t8"] }
+  ],
+  "skills": [{ "name": "Ultrasonic ranging", "domain": "Embedded", "why": "The rover needs distance readings." }],
+  "resources": [{ "title": "TB6612FNG datasheet", "type": "datasheet", "note": "Read the pin table first." }],
+  "risks": [{ "text": "Reversed battery polarity can destroy the driver.", "mitigation": "Check polarity with the multimeter before connecting." }]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "fuse",
+  "private": true,
+  "type": "module",
+  "description": "Fuse: hardware and robotics learning diary. No build step; package.json exists only to run tests.",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "serve": "python3 -m http.server 8080 --directory public"
+  }
+}

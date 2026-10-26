@@ -1,0 +1,15 @@
+{
+  "schema": "fuse.project/1",
+  "project": { "name": "Broken plan" },
+  "parts": [
+    { "ref": "p1", "name": "Servo", "qty": 0 },
+    { "ref": "p1", "name": "Wheel", "qty": 2.5 }
+  ],
+  "tasks": [
+    { "ref": "t1", "stage": "testing", "title": "Test it" },
+    { "ref": "t2", "stage": "build", "title": "Build it", "dependsOn": ["t30"], "partRefs": ["p9"] },
+    { "ref": "t3", "stage": "build", "title": "Loop A", "dependsOn": ["t4"] },
+    { "ref": "t4", "stage": "build", "title": "Loop B", "dependsOn": ["t3"] },
+    { "ref": "t5", "stage": "build" }
+  ]
+}
