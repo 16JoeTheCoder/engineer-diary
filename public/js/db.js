@@ -9,13 +9,17 @@ export const COLLECTIONS = [
 ];
 
 let adapter = null, fb = null, handlers = null;
-export const info = { mode: firebaseConfig ? "firestore" : "local", user: null, sdkError: null };
+// ?emulator runs against the local Firebase emulators (auth :9099, firestore :8085) for testing.
+const params = new URLSearchParams(location.search);
+const emulator = params.has("emulator");
+const config = emulator ? (firebaseConfig || { apiKey: "demo-key", projectId: "demo-fuse", authDomain: "localhost" }) : firebaseConfig;
+export const info = { mode: config ? "firestore" : "local", user: null, sdkError: null, emulator };
 
 // handlers: onDocs(col, docs, removedIds), onStatus(status), onAuth(user|null)
 export async function init(h) {
   handlers = h;
-  const forceLocal = new URLSearchParams(location.search).has("local");
-  if (!firebaseConfig || forceLocal) {
+  const forceLocal = params.has("local");
+  if (!config || forceLocal) {
     info.mode = "local";
     adapter = localAdapter(forceLocal ? "fuse-test" : "fuse-local");
     await adapter.start(handlers);
@@ -24,7 +28,7 @@ export async function init(h) {
   }
   try {
     const { loadFirebase } = await import("./db-firestore.js");
-    fb = await loadFirebase(firebaseConfig);
+    fb = await loadFirebase(config, emulator);
   } catch (e) {
     info.sdkError = e.message || String(e);
     handlers.onStatus({ state: "error", error: "Could not load the sync library. Connect once so it can be cached." });
@@ -47,6 +51,10 @@ export async function init(h) {
 
 export async function signIn() {
   const { authMod, auth } = fb;
+  if (emulator) { // the auth emulator accepts an unsigned Google credential
+    const who = params.get("emulator") || "josef";
+    return authMod.signInWithCredential(auth, authMod.GoogleAuthProvider.credential(JSON.stringify({ sub: who, email: `${who}@example.com`, email_verified: true })));
+  }
   const provider = new authMod.GoogleAuthProvider();
   try { await authMod.signInWithPopup(auth, provider); }
   catch (e) {

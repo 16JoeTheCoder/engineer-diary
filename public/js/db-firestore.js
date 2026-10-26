@@ -4,7 +4,7 @@
 export const SDK = "13.0.0";
 const CDN = `https://www.gstatic.com/firebasejs/${SDK}`;
 
-export async function loadFirebase(config) {
+export async function loadFirebase(config, emulator = false) {
   const [appMod, authMod, fs] = await Promise.all([
     import(`${CDN}/firebase-app.js`),
     import(`${CDN}/firebase-auth.js`),
@@ -16,6 +16,10 @@ export async function loadFirebase(config) {
     ignoreUndefinedProperties: true,
     localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }),
   });
+  if (emulator) {
+    authMod.connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+    fs.connectFirestoreEmulator(db, "127.0.0.1", 8085);
+  }
   return { app, auth, authMod, db, fs };
 }
 
@@ -30,6 +34,12 @@ export function firestoreAdapter(fb, uid, collections) {
   const countReads = (n) => {
     if (!n) return;
     try { localStorage.setItem(readKey, String((+localStorage.getItem(readKey) || 0) + n)); } catch {}
+  };
+
+  const track = (promise) => {
+    inflight++; status();
+    promise.then(() => { error = null; }, (e) => { error = e.message || String(e); })
+      .finally(() => { inflight--; status(); });
   };
 
   const status = () => {
@@ -60,26 +70,21 @@ export function firestoreAdapter(fb, uid, collections) {
       })));
       status();
     },
-    async writeMany(list) {
-      inflight++; status();
-      try {
-        for (let i = 0; i < list.length; i += 400) {
-          const b = fs.writeBatch(db);
-          for (const { col, doc } of list.slice(i, i + 400)) b.set(fs.doc(db, ...base, col, doc.id), doc);
-          await b.commit();
-        }
-        error = null;
-      } catch (e) {
-        error = e.message || String(e);
-        throw e;
-      } finally { inflight--; status(); }
+    // Firestore applies a write to the local cache the moment it is issued; the promise only settles
+    // when the server acknowledges it, which never happens offline. So never make callers wait for it:
+    // return at once and track the acknowledgement for the sync status.
+    writeMany(list) {
+      for (let i = 0; i < list.length; i += 400) {
+        const b = fs.writeBatch(db);
+        for (const { col, doc } of list.slice(i, i + 400)) b.set(fs.doc(db, ...base, col, doc.id), doc);
+        track(b.commit());
+      }
+      return Promise.resolve();
     },
-    async putBlob(b) {
+    putBlob(b) {
       const { data, ...rest } = b;
-      inflight++; status();
-      try { await fs.setDoc(fs.doc(db, ...base, "blobs", b.id), { ...rest, data: fs.Bytes.fromUint8Array(data) }); error = null; }
-      catch (e) { error = e.message; throw e; }
-      finally { inflight--; status(); }
+      track(fs.setDoc(fs.doc(db, ...base, "blobs", b.id), { ...rest, data: fs.Bytes.fromUint8Array(data) }));
+      return Promise.resolve();
     },
     async getBlob(id) {
       const s = await fs.getDoc(fs.doc(db, ...base, "blobs", id));

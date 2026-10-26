@@ -103,3 +103,16 @@ export const b64FromBytes = (u8) => {
   return btoa(s);
 };
 export const bytesFromB64 = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+
+// Read a form control as the type named in data-type: text|int|num|idr|tags|bool|null
+export function coerce(el) {
+  const t = el.dataset.type || "text";
+  const v = el.type === "checkbox" ? el.checked : el.value;
+  if (t === "bool") return !!v;
+  if (t === "int") { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.max(el.min ? +el.min : 0, n) : 0; }
+  if (t === "num") { const n = parseFloat(String(v).replace(",", ".")); return Number.isFinite(n) ? n : null; }
+  if (t === "idr") return parseIdr(v);
+  if (t === "tags") return splitTags(v);
+  if (t === "null") return v || null;
+  return String(v).trim();
+}
