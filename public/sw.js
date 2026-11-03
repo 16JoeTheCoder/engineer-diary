@@ -1,13 +1,15 @@
 // Service worker: the app opens with no signal.
 // App shell: served from cache, refreshed in the background (stale-while-revalidate).
 // Firebase SDK from gstatic: cache-first (the URL is versioned). Firestore and auth traffic is never cached here.
-const VERSION = "fuse-v1"; // bump on deploys that change the shell list
+const VERSION = "fuse-v2"; // bump on deploys that change the shell list
 const SHELL = [
   "./", "index.html", "manifest.webmanifest", "css/tokens.css", "css/app.css",
   "js/app.js", "js/actions.js", "js/backup.js", "js/config.js", "js/db.js", "js/db-firestore.js", "js/db-local.js", "js/derive.js",
   "js/photos.js", "js/report.js", "js/sample.js", "js/search.js", "js/store.js", "js/ui.js", "js/util.js",
+  "js/security.js", "js/files.js", "js/file-types.js", "js/flow.js", "js/export.js", "js/export-md.js", "js/export-html.js", "js/zip.js",
   "js/screens/entry.js", "js/screens/home.js", "js/screens/importer.js", "js/screens/log.js", "js/screens/more.js",
   "js/screens/parts.js", "js/screens/project.js", "js/screens/projects.js", "js/screens/skills.js",
+  "js/screens/notebook.js", "js/screens/flow.js", "js/screens/export.js",
   "import/validate.js", "import/prompt.js", "import/commit.js",
   "assets/fonts/space-grotesk-latin-300-normal.woff2", "assets/fonts/space-grotesk-latin-400-normal.woff2",
   "assets/fonts/space-grotesk-latin-500-normal.woff2", "assets/fonts/space-grotesk-latin-700-normal.woff2",
@@ -40,7 +42,8 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); return res; })));
     return;
   }
-  if (url.origin !== location.origin || url.pathname.startsWith("/__/")) return; // auth handler, APIs: network only
+  // auth handler, /api/* and presigned R2 URLs (other origin): network only, never cached
+  if (url.origin !== location.origin || url.pathname.startsWith("/__/") || url.pathname.startsWith("/api/")) return;
   e.respondWith((async () => {
     const c = await caches.open(VERSION);
     const key = req.mode === "navigate" ? "index.html" : req;

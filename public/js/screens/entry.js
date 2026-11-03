@@ -8,15 +8,30 @@ import { icon, toast } from "../ui.js";
 import { pendingLevels, PROOF_KINDS } from "../derive.js";
 import { compress, objectUrl, cachedUrl } from "../photos.js";
 
-const TYPES = ["build", "fail", "decision", "experiment", "purchase", "reflect"];
-const TEMPLATES = {
-  build: [["title", "Title", "What did you build?"], ["bodyMd", "Notes", "What you did, what worked", 4]],
-  fail: [["title", "Title", "What broke?"], ["fields.symptom", "Symptom", "What you saw", 2], ["fields.hypothesis", "Hypothesis", "What you think caused it", 2], ["fields.fix", "Fix", "What you changed", 2], ["fields.rootCause", "Root cause", "Why it really happened", 2], ["bodyMd", "Notes", "", 2]],
-  decision: [["title", "Title", "What did you decide?"], ["fields.question", "Question", "The choice you faced"], ["fields.options", "Options", "A, B, C", 2], ["fields.choice", "Choice", "What you picked"], ["fields.why", "Why", "The reason, in one or two lines", 2]],
-  experiment: [["title", "Title", "What are you testing?"], ["fields.hypothesis", "Hypothesis", "What you expect", 2], ["fields.setup", "Setup", "Parts, wiring, conditions", 2], ["__measure", "Measurements"], ["fields.result", "Result", "What the numbers say", 2]],
-  purchase: [["purchase.name", "Part", "Which part?"], ["purchase.qty", "Qty", "1"], ["purchase.priceIdr", "Unit price", "Rp 28.000"], ["purchase.shop", "Shop", "Shopee"], ["purchase.date", "Date", "2026-10-26"], ["bodyMd", "Notes", "", 2]],
-  reflect: [["title", "Title", "What did you learn?"], ["bodyMd", "Reflection", "Tag it taught when it explains a skill to someone else", 5]],
+export const TYPES = ["build", "fail", "decision", "experiment", "study", "design", "purchase", "reflect"];
+// [path, label, placeholder, rows]. MAIN is the one prompt shown up front; DETAIL sits under "Add detail".
+const MAIN = {
+  build: [["bodyMd", "What you did", "What you made today, what worked", 3]],
+  fail: [["fields.symptom", "Symptom", "What you saw", 2]],
+  decision: [["fields.choice", "The choice", "What you picked"]],
+  experiment: [["fields.setup", "What you tried", "Parts, wiring, conditions", 2]],
+  study: [["fields.concept", "The concept", "Ohm's law, torque, PID", 2]],
+  design: [["fields.options", "The options", "One option per line", 3]],
+  purchase: [["purchase.name", "Part", "Which part?"], ["purchase.qty", "Qty", "1"], ["purchase.priceIdr", "Unit price", "Rp 28.000"], ["purchase.shop", "Shop", "Shopee"], ["purchase.date", "Date", "2026-10-26"]],
+  reflect: [["bodyMd", "Reflection", "What you learned. Tag it taught when it explains a skill to someone else", 4]],
 };
+const DETAIL = {
+  build: [],
+  fail: [["fields.hypothesis", "Hypothesis", "What you think caused it", 2], ["fields.fix", "Fix", "What you changed", 2], ["fields.rootCause", "Root cause", "Why it really happened", 2], ["bodyMd", "Notes", "", 2]],
+  decision: [["fields.question", "Context", "The choice you faced"], ["fields.options", "Options considered", "One option per line", 3], ["fields.why", "Why", "The reason, in one or two lines", 2], ["fields.changeMyMind", "What would change my mind", "A result or fact that would flip this", 2]],
+  experiment: [["fields.hypothesis", "Hypothesis", "What you expect", 2], ["__measure", "Measurements"], ["fields.result", "Result", "What the numbers say", 2]],
+  study: [["fields.whyItMatters", "Why it matters for this build", "", 2], ["fields.equations", "Equations", "V = I R  (V, A, ohm)", 3], ["fields.workedExample", "Worked example", "5 V / 220 ohm = 22.7 mA", 3], ["fields.howToTest", "How I would test this", "", 2]],
+  design: [["fields.choice", "Choice", "The option you picked"], ["fields.why", "Why", "", 2], ["bodyMd", "Notes", "Attach the model or sketch files on the project Notebook", 2]],
+  purchase: [["bodyMd", "Notes", "", 2]],
+  reflect: [],
+};
+const detailKey = (t) => `fuse.detail.${t}`;
+const detailOpen = (t) => { try { return localStorage.getItem(detailKey(t)) === "1"; } catch { return false; } };
 
 let draft = null, draftKey = null, restored = false, adding = null, saveTimer = null, tick = null;
 
@@ -69,6 +84,8 @@ function load(ctx) {
 }
 const draftHasContent = (d) => d.title || d.bodyMd || Object.values(d.fields || {}).some(Boolean) || d.evidence.length || d.sessionSec || d.timerStart || d.purchase?.name;
 
+const titlePh = (t) => ({ build: "What did you build?", fail: "What broke?", decision: "What did you decide?", experiment: "What are you testing?", study: "What are you learning?", design: "What are you designing?", reflect: "What did you learn?" }[t] || "Title");
+
 function cline(path, label, ph, rows) {
   const v = getPath(draft, path) ?? "";
   const t = draft.times?.[path] || "--:--:--";
@@ -99,7 +116,7 @@ function evThumb(e) {
   return html`<span class="th">${e.kind === "measurement" ? "unit" : e.kind === "snippet" ? "</>" : "link"}</span>`;
 }
 const evBody = (e) => e.kind === "measurement" ? html`<span><b class="mono">${e.value} ${e.unit}</b> ${e.caption}</span>`
-  : e.kind === "snippet" ? html`<pre>${e.text}</pre>` : e.kind === "link" ? html`<span class="mono" style="font-size:12px;word-break:break-all">${e.text}</span>` : html`<span>${e.caption || "Photo"}${e.lostPhoto ? html` <span class="st bad">Photo not autosaved. Add it again.</span>` : ""}</span>`;
+  : e.kind === "snippet" ? html`<pre>${e.text}</pre>` : e.kind === "link" ? html`<span class="mono" style="font-size:13px;word-break:break-all">${e.text}</span>` : html`<span>${e.caption || "Photo"}${e.lostPhoto ? html` <span class="st bad">Photo not autosaved. Add it again.</span>` : ""}</span>`;
 
 export default {
   title: (ctx) => (ctx.id && ctx.id !== "new" ? "Edit entry" : "New entry"),
@@ -119,26 +136,51 @@ export default {
     const skillOrder = [...skills].sort((a, b) => (draft.skillIds.includes(b.id) - draft.skillIds.includes(a.id)) || (projSkills.has(b.id) - projSkills.has(a.id)) || a.name.localeCompare(b.name));
     const running = !!draft.timerStart;
 
+    const used = new Set([...(task?.skillIds || []), ...projSkills, ...store.all("entries").filter((e) => e.projectId === draft.projectId).flatMap((e) => e.skillIds || []), ...draft.skillIds]);
+    const near = skillOrder.filter((x) => used.has(x.id));
+    const rest = skillOrder.filter((x) => !used.has(x.id));
+    const chip = (s) => {
+      const on = draft.skillIds.includes(s.id);
+      const cur = lv.get(s.id)?.level || 0;
+      const p = pend.get(s.id);
+      if (on && p && (hasProof || p.after >= 2)) return html`<button class="chip hotc" data-act="skill" data-id="${s.id}" aria-pressed="true">${s.name} <span class="lv">LV ${p.before} → ${p.after} pending</span></button>`;
+      if (on && p) return html`<button class="chip dash on" data-act="skill" data-id="${s.id}" aria-pressed="true">${s.name} <span class="lv">LV ${p.before} → ${p.after} pending · needs proof for LV 2</span></button>`;
+      if (on && !hasProof && cur < 2) return html`<button class="chip dash on" data-act="skill" data-id="${s.id}" aria-pressed="true">${s.name} <span class="lv">needs proof</span></button>`;
+      return html`<button class="chip ${on ? "on" : ""}" data-act="skill" data-id="${s.id}" aria-pressed="${on}">${s.name} <span class="lv">LV ${cur}</span></button>`;
+    };
+    const detailFields = DETAIL[draft.type] || [];
+    const hasDetail = detailFields.some(([p]) => p !== "__measure" && String(getPath(draft, p) || "").trim()) || draft.evidence.length || draft.tags.length;
+    const open = detailOpen(draft.type) || hasDetail || (task?.proofKinds || []).length;
+    const canSave = draft.type === "purchase" ? !!String(draft.purchase?.name || "").trim() : !!String(draft.title || "").trim();
+
     return html`
-    <div class="page-h"><h1>${draft.id ? "Edit" : "Log"} <b>${draft.type}.</b></h1>
-      <div class="row">${restored ? html`<span class="st warn">Unsaved draft restored</span>` : ""}<button class="btn ghost" data-act="discard">${restored ? "Discard and start fresh" : "Discard draft"}</button><button class="btn hot" data-act="save">${icon("check")}Save entry</button></div></div>
+    <div class="page-h"><h1>${draft.id ? "Edit" : "Log"} <b>${draft.type}.</b></h1>${restored ? html`<span class="st warn">Unsaved draft restored</span>` : ""}</div>
     ${task ? html`<p class="banner"><span>Proof for task: <b>${task.title}</b>${(task.proofKinds || []).length ? ` · capture ${task.proofKinds.join(", ")}` : ""}</span></p>` : ""}
     <div class="editor">
       <section class="console ed" style="--tc:var(--t-${draft.type})" aria-label="Entry">
-        <div class="tbar">
+        <div class="tbar" role="group" aria-label="Entry type">
           ${TYPES.map((t) => html`<button data-act="type" data-t="${t}" aria-pressed="${t === draft.type}" style="--tc:var(--t-${t})">${t}</button>`)}
           <span class="timer"><span class="clock mono" id="clock">${clock(elapsed())}</span><button class="cbtn" data-act="timer">${running ? "Pause" : draft.sessionSec ? "Resume" : "Start timer"}</button></span>
         </div>
         <div class="lines">
           <div class="cline"><span class="ts">${stamp(draft.startedAt).slice(11)}</span><label class="lb" for="d-project">Project</label>
             <select id="d-project" data-k="d-project" data-dsel="projectId"><option value="">No project</option>${projects.map((p) => html`<option value="${p.id}" ${p.id === draft.projectId ? raw("selected") : ""}>${p.name}</option>`)}</select></div>
-          ${TEMPLATES[draft.type].map(([p, l, ph, rows]) => (p === "__measure" ? measureTable() : cline(p, l, ph, rows)))}
-          <div class="cline"><span class="ts">${draft.times?.tags || "--:--:--"}</span><label class="lb" for="d-tags">Tags</label><input id="d-tags" data-k="d-tags" data-dtags value="${draft.tags.join(", ")}" placeholder="motor, pwm, taught"></div>
+          ${draft.type === "purchase" ? "" : cline("title", "Title", titlePh(draft.type))}
+          ${draft.type === "purchase" ? "" : html`<p class="hint" id="title-hint" ${canSave ? raw("hidden") : ""}>Add a title to save.</p>`}
+          ${MAIN[draft.type].map(([p, l, ph, rows]) => cline(p, l, ph, rows))}
         </div>
         <datalist id="ed-parts">${store.all("parts").map((p) => html`<option value="${p.name}">`)}</datalist>
       </section>
 
-      <aside class="stack">
+      <details class="more-detail" data-detail ${open ? raw("open") : ""}>
+        <summary class="btn">Add detail</summary>
+        <div class="stack" style="margin-top:12px">
+        ${detailFields.length ? html`<section class="console ed" style="--tc:var(--t-${draft.type})" aria-label="More fields"><div class="lines">
+          ${detailFields.map(([p, l, ph, rows]) => (p === "__measure" ? measureTable() : cline(p, l, ph, rows)))}
+        </div></section>` : ""}
+        <section class="console ed" style="--tc:var(--t-${draft.type})" aria-label="Tags"><div class="lines">
+          <div class="cline"><span class="ts">${draft.times?.tags || "--:--:--"}</span><label class="lb" for="d-tags">Tags</label><input id="d-tags" data-k="d-tags" data-dtags value="${draft.tags.join(", ")}" placeholder="motor, pwm, taught"></div>
+        </div></section>
         <section class="panel stack">
           <div class="panel-h"><h3>Evidence</h3>${hasProof ? html`<span class="st ok">Has proof</span>` : html`<span class="st warn">No proof yet</span>`}</div>
           <div class="row">
@@ -151,25 +193,16 @@ export default {
           ${adding === "snippet" ? html`<form class="stack s" data-addf="snippet"><textarea class="in mono" name="text" placeholder="Paste code or serial output" aria-label="Snippet" required></textarea><input class="in" name="caption" placeholder="Caption" aria-label="Caption"><button class="btn s primary">Add snippet</button></form>` : ""}
           ${adding === "link" ? html`<form class="stack s" data-addf="link"><input class="in" name="text" type="url" placeholder="https://" aria-label="Link" required><button class="btn s primary">Add link</button></form>` : ""}
           <div class="ev-list">
-            ${saved.map((e) => html`<div class="ev">${evThumb(e)}${evBody(e)}<button class="btn s icon ghost" data-act="ev-archive" data-id="${e.id}" aria-label="Archive evidence">${icon("trash")}</button></div>`)}
+            ${saved.map((e) => html`<div class="ev">${evThumb(e)}${evBody(e)}<button class="btn s icon ghost" data-act="ev-archive" data-id="${e.id}" aria-label="Archive evidence">${icon("archive")}</button></div>`)}
             ${draft.evidence.filter((e) => e.kind !== "measurement" || draft.type !== "experiment").map((e) => html`<div class="ev">${evThumb(e)}${evBody(e)}<button class="btn s icon ghost" data-act="ev-del" data-id="${e.id}" aria-label="Remove">${icon("x")}</button></div>`)}
             ${saved.length + draft.evidence.length ? "" : html`<p class="muted">A photo, a measurement with a unit, or a snippet counts as proof. A link does not.</p>`}
           </div>
         </section>
-
         <section class="panel stack">
-          <div class="panel-h"><h3>Skills</h3><a class="btn s ghost" href="#/skills">Edit</a></div>
-          <div class="row">${skillOrder.map((s) => {
-            const on = draft.skillIds.includes(s.id);
-            const cur = lv.get(s.id)?.level || 0;
-            const p = pend.get(s.id);
-            if (on && p && (hasProof || p.after >= 2)) return html`<button class="chip hotc" data-act="skill" data-id="${s.id}" aria-pressed="true">${s.name} <span class="lv">LV ${p.before} → ${p.after} pending</span></button>`;
-            if (on && p) return html`<button class="chip dash on" data-act="skill" data-id="${s.id}" aria-pressed="true" style="background:transparent;color:var(--ink)">${s.name} <span class="lv">LV ${p.before} → ${p.after} pending · NEEDS PROOF for LV 2</span></button>`;
-            if (on && !hasProof && cur < 2) return html`<button class="chip dash on" data-act="skill" data-id="${s.id}" aria-pressed="true" style="background:transparent;color:var(--ink)">${s.name} <span class="lv">NEEDS PROOF</span></button>`;
-            return html`<button class="chip ${on ? "on" : ""}" data-act="skill" data-id="${s.id}" aria-pressed="${on}">${s.name} <span class="lv">LV ${cur}</span></button>`;
-          })}${skills.length ? "" : html`<p class="muted">No skills yet. Add them on the Skills screen.</p>`}</div>
+          <div class="panel-h"><h3>Skills</h3><a class="btn s ghost" href="#/skills">Edit skills</a></div>
+          <div class="row">${near.map(chip)}${skills.length && !near.length ? html`<p class="muted">No skills linked to this project yet.</p>` : ""}${skills.length ? "" : html`<p class="muted">No skills yet. Add them on the Skills screen.</p>`}</div>
+          ${rest.length ? html`<details><summary class="btn s ghost">All skills</summary><div class="row" style="margin-top:8px">${rest.map(chip)}</div></details>` : ""}
         </section>
-
         <section class="panel stack s">
           <h3>Parts used</h3>
           <div class="row">${draft.partIds.map((id) => store.get("parts", id)).filter(Boolean).map((p) => html`<button class="chip on" data-act="part-del" data-id="${p.id}" aria-label="Remove ${p.name}">${p.name} ×</button>`)}</div>
@@ -177,7 +210,12 @@ export default {
           <h3 style="margin-top:8px">Resources used</h3>
           <div class="row">${store.all("resources").map((r) => html`<button class="chip ${draft.resourceIds.includes(r.id) ? "on" : ""}" data-act="res" data-id="${r.id}">${r.title}</button>`)}${store.all("resources").length ? "" : html`<a class="muted" href="#/library">Add resources in the Library</a>`}</div>
         </section>
-      </aside>
+        </div>
+      </details>
+    </div>
+    <div class="save-bar">
+      <button class="btn primary" data-act="save" data-save ${canSave ? "" : raw("disabled")}>${icon("check")}Save entry</button>
+      <button class="btn text" data-act="discard">${restored ? "Discard and start fresh" : "Discard draft"}</button>
     </div>`;
   },
   mount(root) {
@@ -196,6 +234,11 @@ export default {
         setPath(draft, t.dataset.d, v);
         draft.times[t.dataset.d] ||= hms();
         const lineTs = t.closest(".cline")?.querySelector(".ts"); if (lineTs) lineTs.textContent = draft.times[t.dataset.d];
+        if (t.dataset.d === "title" || t.dataset.d === "purchase.name") {
+          const ok = !!t.value.trim();
+          root.querySelector("[data-save]")?.toggleAttribute("disabled", !ok);
+          root.querySelector("#title-hint")?.toggleAttribute("hidden", ok);
+        }
       } else if (t.dataset.ev) {
         const [id, f] = t.dataset.ev.split(".");
         const ev = draft.evidence.find((x) => x.id === id);
@@ -218,6 +261,7 @@ export default {
         persist(); rerender();
       }
     });
+    root.querySelector("[data-detail]")?.addEventListener("toggle", (e) => { try { localStorage.setItem(detailKey(draft.type), e.target.open ? "1" : "0"); } catch {} });
     root.addEventListener("submit", (e) => {
       const f = e.target;
       e.preventDefault();
@@ -261,7 +305,7 @@ export default {
     },
     save: async (el) => {
       if (draft.type === "purchase" && !draft.id && !String(draft.purchase?.name || "").trim()) { toast("Name the part you bought."); return; }
-      if (!draft.title && draft.type !== "purchase" && !draft.bodyMd && !Object.values(draft.fields).some(Boolean)) { toast("Write at least a title."); document.getElementById("d-title")?.focus(); return; }
+      if (draft.type !== "purchase" && !String(draft.title || "").trim()) { toast("Add a title to save."); document.getElementById("d-title")?.focus(); return; }
       el.disabled = true;
       const before = A.levels();
       const sec = elapsed();

@@ -11,7 +11,7 @@ const assert = (c, m) => { if (!c) { throw new Error("FAIL: " + m); } console.lo
     // 1. Lost and restore
     const part = await S(() => window.__fuse.store.all("parts").find((x) => x.name === "TB6612 motor driver"));
     await go("parts?tab=in_use");
-    await p.click(`[data-act="lost"][data-id="${part.id}"]`); await p.waitForTimeout(200);
+    await p.click(`summary[aria-label="More actions for ${part.name}"]`); await p.click(`[data-act="lost"][data-id="${part.id}"]`); await p.waitForTimeout(200);
     let now = await S((id) => window.__fuse.store.get("parts", id), part.id);
     assert(now.status === "lost" && now.projectId === null && now.lostFrom.status === "in_use" && now.lostFrom.projectId === part.projectId, "mark lost stores lostFrom and clears project");
     await go("parts?tab=lost");
@@ -24,6 +24,7 @@ const assert = (c, m) => { if (!c) { throw new Error("FAIL: " + m); } console.lo
     const skill = await S(() => window.__fuse.store.all("skills").find((s) => s.name === "Using a multimeter"));
     await go(`entry/new?type=build&project=${pid}`);
     await p.fill("#d-title", "Measured the battery pack");
+    await p.evaluate(() => document.querySelectorAll("details").forEach((d) => { d.open = true; }));
     await p.click(`[data-act="skill"][data-id="${skill.id}"]`); await p.waitForTimeout(150);
     let chip = await p.textContent(`[data-act="skill"][data-id="${skill.id}"]`);
     assert(/LV 0 → 1 pending/.test(chip), "pending level on a tagged draft without proof: " + chip.trim());

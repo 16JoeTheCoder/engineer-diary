@@ -34,8 +34,8 @@ function row(p) {
     <button class="nm" data-act="open" data-id="${p.id}">${p.name}<small>${[p.category, p.projectId && projectName(p.projectId), p.lastPaidIdr != null && `last paid ${rp(p.lastPaidIdr)}`].filter(Boolean).join(" · ") || "Tap for details"}</small></button>
     <input class="bare num-in hide-s" style="width:4.5em" data-edit="parts.${p.id}.qty" data-type="int" inputmode="numeric" value="${p.qty}" aria-label="Quantity of ${p.name}">
     <span class="hide-s">${statusSelect(p)}</span>
-    <span class="links hide-s">${links.map((l) => html`<a class="chip" href="${safeUrl(l.url)}" target="_blank" rel="noopener noreferrer">${l.shop}${icon("external")}</a>`)}${(p.tags || []).map((t) => html`<button class="tag" style="background:none;border:0;cursor:pointer;min-height:32px" data-act="tag" data-t="${t}">#${t}</button>`)}</span>
-    <span class="row" style="gap:2px;flex-wrap:nowrap">${p.status === "lost" ? html`<button class="btn s" data-act="restore" data-id="${p.id}">Found it</button>` : p.status !== "retired" ? html`<button class="btn s" data-act="lost" data-id="${p.id}">Lost</button>` : ""}</span>
+    <span class="links hide-s">${links.map((l) => html`<a class="chip" href="${safeUrl(l.url)}" target="_blank" rel="noopener noreferrer">${l.shop}${icon("external")}</a>`)}${(p.tags || []).map((t) => html`<button class="tag" style="background:none;border:0;cursor:pointer;min-height:44px" data-act="tag" data-t="${t}">#${t}</button>`)}</span>
+    <span class="row" style="gap:2px;flex-wrap:nowrap">${p.status === "lost" ? html`<button class="btn s" data-act="restore" data-id="${p.id}">Found it</button>` : p.status !== "retired" ? html`<details class="menu"><summary class="btn s icon ghost" aria-label="More actions for ${p.name}">${icon("more")}</summary><div class="menu-pop"><button class="btn s ghost" data-act="lost" data-id="${p.id}">Mark lost</button><button class="btn s ghost" data-act="retire" data-id="${p.id}">Retire</button></div></details>` : ""}</span>
   </div>`;
 }
 
@@ -72,6 +72,7 @@ export default {
   acts: {
     open: (el) => openPart(el.dataset.id),
     lost: (el) => A.markLost(el.dataset.id),
+    retire: (el) => { const p = store.get("parts", el.dataset.id); const { undo } = store.undoable(() => A.setPartStatus(p.id, "retired", { projectId: null })); toast(`${p.name} retired.`, { undo }); },
     restore: (el) => A.restorePart(el.dataset.id),
     tag: async (el) => { const { openSearch } = await import("../app.js"); openSearch(`#${el.dataset.t}`); },
   },
@@ -104,7 +105,7 @@ export function openPart(id) {
         <section class="stack s"><div class="spread"><p class="label">Purchases · the only price history</p><button class="btn s primary" data-p="buy">Record purchase</button></div>
           ${purchases.length ? html`<table class="t"><tbody>${purchases.map((x) => html`<tr><td class="mono">${x.date}</td><td>${x.shop || ""}</td><td class="r mono">${x.qty} × ${rp(x.priceIdr)}</td><td>${projectName(x.projectId)}</td></tr>`)}</tbody></table>` : html`<p class="muted">Nothing bought yet.${p.priceIsEstimate ? " The plan price is an estimate." : ""}</p>`}
         </section>
-        <details><summary class="label" style="cursor:pointer;min-height:36px;display:flex;align-items:center">Status history</summary>
+        <details><summary class="label" style="cursor:pointer;min-height:44px;display:flex;align-items:center">Status history</summary>
           <ul class="mono" style="font-size:13px;padding-left:18px">${(p.statusLog || []).slice().reverse().map((s) => html`<li>${stamp(s.at)} ${A.statusLabel(s.status)}${s.note ? ` · ${s.note}` : ""}</li>`)}</ul></details>
         <div class="row end">
           ${p.status === "lost" ? "" : html`<button class="btn" data-p="lost">Mark lost</button>`}

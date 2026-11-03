@@ -1,12 +1,13 @@
 // Project page: the fuse, next smallest action, tasks by stage, BOM and budget, aims, risks, entries, exports, close.
 import * as store from "../store.js";
 import * as A from "../actions.js";
-import { html, raw, rp, stamp, today, hours, copyText, download, searchLinks, safeUrl } from "../util.js";
+import { html, raw, rp, moneyHtml, stamp, today, hours, copyText, download, searchLinks, safeUrl } from "../util.js";
 import { icon, toast, modal, modalHead, ask } from "../ui.js";
 import { STAGES, nextAction, projectCosts, projectTasks, proofByEntry, lineTotal } from "../derive.js";
 import { offerProof } from "./home.js";
 import { reportBrief, projectMarkdown, bomCsv, STYLES } from "../report.js";
 import { projectToPlan } from "../../import/commit.js";
+import { notebook, mountNotebook, nbActs, askPasscode } from "./notebook.js";
 
 const idrIn = (n) => (n == null ? "" : new Intl.NumberFormat("id-ID").format(n));
 
@@ -85,13 +86,21 @@ export default {
         <textarea class="bare" data-edit="projects.${p.id}.summary" placeholder="One line on what it does" aria-label="Summary" rows="1" style="min-height:40px;color:var(--ink-muted)">${p.summary || ""}</textarea>
       </div>
       <div class="row">
-        <a class="btn hot" href="#/entry/new?project=${p.id}">${icon("plus")}Log entry</a>
+        ${p.status === "complete" ? html`<span class="st ok">${icon("lock")}Complete, locked</span>` : ""}
+        <a class="btn ${p.mode === "flow" ? "" : "hot"}" href="#/entry/new?project=${p.id}">${icon("plus")}Log entry</a>
+        ${p.mode === "flow" ? html`<a class="btn hot" href="#/flow/${p.id}">Continue Flowstate</a>` : html`<a class="btn" href="#/flow/${p.id}">Open in Flowstate</a>`}
         <button class="btn" data-act="brief">${icon("file")}Report brief</button>
         <button class="btn" data-act="more">More</button>
       </div>
     </div>
 
-    <section class="panel" style="margin-bottom:20px">${fuse(p)}</section>
+    <section class="panel" style="margin-bottom:16px">${fuse(p)}</section>
+    <div class="stats" style="margin-bottom:32px">
+      <div class="stat"><p class="label">Logged</p><p class="v">${hours(entries.reduce((n, e) => n + (e.sessionSec || 0), 0))}<small>h</small></p></div>
+      <div class="stat"><p class="label">Spent</p><p class="v money-v">${moneyHtml(costs.actual)}</p></div>
+      <div class="stat"><p class="label">Skills proven here</p><p class="v">${costs.provenSkills}</p></div>
+      <div class="stat"><p class="label">Cost per skill</p><p class="v money-v">${costs.costPerSkill == null ? "—" : moneyHtml(costs.costPerSkill)}</p></div>
+    </div>
 
     <div class="grid2">
       <div class="stack l">
@@ -100,11 +109,13 @@ export default {
           <p class="t">${na.text || "Add a task below."}</p>
           <div class="row">
             ${na.taskId ? html`<button class="btn primary" data-act="tick" data-id="${na.taskId}">${icon("check")}Mark done</button>` : ""}
-            <a class="btn" href="#/entry/new?project=${p.id}${na.taskId ? `&task=${na.taskId}` : ""}">${icon("camera")}Log proof</a>
-            <button class="btn" data-act="edit-next">Write my own</button>
-            ${na.source === "override" ? html`<button class="btn ghost" data-act="clear-next" style="color:#0D0E10">Use the task list</button>` : ""}
+            <a class="btn outline" href="#/entry/new?project=${p.id}${na.taskId ? `&task=${na.taskId}` : ""}">${icon("camera")}Log proof</a>
+            <button class="btn text" data-act="edit-next">Write my own</button>
+            ${na.source === "override" ? html`<button class="btn text" data-act="clear-next">Use the task list</button>` : ""}
           </div>
         </section>
+
+        ${notebook(p)}
 
         <section class="panel">
           <div class="panel-h"><h3>Tasks</h3><span class="mono muted">${done}/${tasks.length} done</span></div>
@@ -118,18 +129,18 @@ export default {
 
         <section class="panel">
           <div class="panel-h"><h3>Diary</h3><a class="btn s" href="#/entry/new?project=${p.id}">Log entry</a></div>
-          ${entries.length ? html`<div class="stack s">${entries.slice(0, 12).map((e) => html`<a href="#/entry/${e.id}" class="row" style="text-decoration:none;min-height:40px"><span class="mono subtle">${stamp(e.createdAt)}</span><span class="mono ty-${e.type}" style="font-weight:700;text-transform:uppercase;font-size:12px">${e.type}</span><span>${e.title || "(untitled)"}</span>${tctx.proofs.get(e.id) ? html`<span class="chip">${tctx.proofs.get(e.id)} proof</span>` : ""}</a>`)}</div>` : html`<p class="muted">No entries yet.</p>`}
+          ${entries.length ? html`<div class="stack s">${entries.slice(0, 12).map((e) => html`<a href="#/entry/${e.id}" class="row" style="text-decoration:none;min-height:44px"><span class="mono subtle">${stamp(e.createdAt)}</span><span class="mono ty-${e.type}" style="font-weight:700;text-transform:uppercase">${e.type}</span><span>${e.title || "(untitled)"}</span>${tctx.proofs.get(e.id) ? html`<span class="chip">${tctx.proofs.get(e.id)} proof</span>` : ""}</a>`)}</div>` : html`<p class="muted">No entries yet.</p>`}
         </section>
       </div>
 
       <div class="stack l">
         <section class="panel stack">
           <div class="panel-h"><h3>Budget</h3>${costs.overCap ? html`<span class="st bad">Over the cap</span>` : costs.cap ? html`<span class="st ok">Within the cap</span>` : ""}</div>
-          <div class="money">
-            <div><p class="label">Planned</p><p class="v">${rp(costs.planned)}</p></div>
+          <div class="money money-v">
+            <div><p class="label">Planned</p><p class="v">${moneyHtml(costs.planned)}</p></div>
             <div><p class="label">Cap</p><input class="bare num" data-edit="projects.${p.id}.budgetCapIdr" data-type="idr" inputmode="numeric" value="${idrIn(p.budgetCapIdr)}" placeholder="Set a cap" aria-label="Budget cap in rupiah" style="font:300 24px/1.1 var(--font-sans)"></div>
-            <div><p class="label">Actual</p><p class="v">${rp(costs.actual)}</p></div>
-            <div><p class="label">Variance</p><p class="v">${costs.variance > 0 ? "+" : ""}${rp(costs.variance)}</p></div>
+            <div><p class="label">Actual</p><p class="v">${moneyHtml(costs.actual)}</p></div>
+            <div><p class="label">Variance</p><p class="v">${costs.variance > 0 ? "+" : ""}${moneyHtml(costs.variance)}</p></div>
           </div>
           ${costs.cap ? html`<div class="meter${costs.overCap ? " over" : ""}" role="img" aria-label="Planned is ${Math.round((costs.planned / costs.cap) * 100)} percent of the cap"><i style="width:${capPct}%"></i></div>` : ""}
           <p class="muted">Cost per skill proven here: <b class="mono">${costs.costPerSkill == null ? "no proof yet" : rp(costs.costPerSkill)}</b>${costs.provenSkills ? ` across ${costs.provenSkills} skill${costs.provenSkills === 1 ? "" : "s"}` : ""}.${costs.unpriced ? ` ${costs.unpriced} line${costs.unpriced === 1 ? " is" : "s are"} unpriced.` : ""}</p>
@@ -143,7 +154,7 @@ export default {
               const part = store.get("parts", l.partId);
               return html`<tr>
                 <td><a href="#/parts?open=${l.partId}" style="font-weight:500">${part?.name || l.name}</a>
-                  <div class="row" style="gap:6px">${l.fromInventory ? html`<span class="from-inv">From inventory</span>` : html`<span class="st ${part && A.OWNED.has(part.status) ? "ok" : part?.status === "ordered" ? "warn" : ""}" style="font-size:11px">${A.statusLabel(part?.status || "planned")}</span>`}
+                  <div class="row" style="gap:6px">${l.fromInventory ? html`<span class="from-inv">From inventory</span>` : html`<span class="st ${part && A.OWNED.has(part.status) ? "ok" : part?.status === "ordered" ? "warn" : ""}">${A.statusLabel(part?.status || "planned")}</span>`}
                   ${!l.fromInventory && !(part?.links || []).length ? searchLinks(part?.searchQuery || part?.name || l.name).map((x) => html`<a class="tag" href="${x.url}" target="_blank" rel="noopener noreferrer">${x.shop} search</a>`) : ""}
                   ${(part?.links || []).map((x) => safeUrl(x.url) ? html`<a class="tag" href="${safeUrl(x.url)}" target="_blank" rel="noopener noreferrer">${x.shop}</a>` : "")}</div></td>
                 <td class="r"><input class="bare num-in" style="width:4em" data-edit="bomLines.${l.id}.qty" data-type="int" min="1" inputmode="numeric" value="${l.qty}" aria-label="Quantity"></td>
@@ -175,6 +186,7 @@ export default {
   mount(root, ctx) {
     const p = store.get("projects", ctx.id);
     if (!p) return;
+    mountNotebook(root, p);
     root.querySelectorAll("[data-add-task]").forEach((f) => f.addEventListener("submit", (e) => {
       e.preventDefault();
       const v = f.t.value.trim();
@@ -197,6 +209,7 @@ export default {
     }));
   },
   acts: {
+    ...nbActs,
     stage: (el) => A.setStage(currentId(), el.dataset.stage),
     tick: (el) => offerProof(el.dataset.id, A.toggleTask(el.dataset.id)),
     "task-move": (el) => A.moveTask(el.dataset.id, +el.dataset.dir),
@@ -266,11 +279,13 @@ function moreDialog(projectId) {
   const p = store.get("projects", projectId);
   modal(String(html`${modalHead(p.name)}<div class="stack">
     <button class="btn" data-x="plan">${icon("copy")}Copy plan for AI</button>
-    <button class="btn" data-x="md">${icon("download")}Export Markdown</button>
+    <a class="btn" href="#/export/${p.id}" data-close>${icon("file")}Export project</a>
+    <button class="btn" data-x="md">${icon("download")}Export diary as Markdown</button>
     <button class="btn" data-x="csv">${icon("download")}Export BOM as CSV</button>
     <label class="f"><span>Track</span><select class="in" data-x-track>${store.all("tracks").map((t) => html`<option value="${t.id}" ${t.id === p.trackId ? raw("selected") : ""}>${t.name}</option>`)}</select></label>
     ${p.closedAt ? html`<button class="btn" data-x="reopen">Reopen project</button>` : html`<button class="btn" data-x="close">Close project</button>`}
-    <button class="btn danger" data-x="archive">${icon("archive")}Archive project</button>
+    ${p.status === "complete" ? html`<button class="btn" data-x="reopen-lock">${icon("lock")}Reopen for changes</button>` : html`<button class="btn" data-x="complete">${icon("lock")}Mark complete</button>`}
+    ${p.status === "complete" ? "" : html`<button class="btn danger" data-x="archive">${icon("archive")}Archive project</button>`}
   </div>`), {
     label: "Project actions",
     onMount: (root, close) => {
@@ -284,6 +299,8 @@ function moreDialog(projectId) {
         if (x === "csv") download(`${slug(p.name)}-bom.csv`, bomCsv(d, p.id), "text/csv");
         if (x === "reopen") { const { undo } = store.undoable(() => store.update("projects", p.id, { closedAt: null })); toast("Project reopened.", { undo }); }
         if (x === "close") { close(); closeDialog(p.id); return; }
+        if (x === "complete") { close(); completeDialog(p.id); return; }
+        if (x === "reopen-lock") { close(); if (await askPasscode(`Reopen ${p.name}`)) { A.reopenProject(p.id); toast("Project reopened. A dated entry records it."); } return; }
         if (x === "archive") { close(); A.archiveWithUndo("projects", p.id, p.name); location.hash = "#/projects"; return; }
         if (x !== "plan") close();
       });
@@ -342,4 +359,17 @@ export function completion(projectId) {
   });
   document.body.append(el);
   el.querySelector("button").focus();
+}
+
+function completeDialog(projectId) {
+  const p = store.get("projects", projectId);
+  const nFiles = store.all("files").filter((f) => f.projectId === p.id && !f.deletedAt).length;
+  const nEntries = store.all("entries").filter((e) => e.projectId === p.id).length;
+  modal(String(html`${modalHead(`Mark ${p.name} complete`)}<div class="stack">
+    <p>Once complete, the project is protected:</p>
+    <ul class="stack s" style="padding-left:20px;margin:0"><li>${nEntries} entries and ${nFiles} files can no longer be archived or deleted from the app.</li><li>New notes and files can still be added.</li><li>Reopening needs your delete passcode and writes a dated entry.</li></ul>
+    <div class="row end"><button class="btn ghost" data-close>Cancel</button><button class="btn primary" data-ok>${icon("lock")}Mark complete</button></div></div>`), {
+    label: "Mark complete",
+    onMount: (root, close) => root.querySelector("[data-ok]").addEventListener("click", () => { A.completeProject(p.id); close(); toast("Project complete and locked. Export a backup now.", { ms: 6000 }); }),
+  });
 }

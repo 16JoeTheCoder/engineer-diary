@@ -3,13 +3,37 @@
 import { b64FromBytes, bytesFromB64 } from "./util.js";
 
 export const BACKUP_FORMAT = "fuse.backup";
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 // Each migration takes a file at version n and returns it at version n + 1.
 // Add one here for every schema change, so old backups always import.
 export const MIGRATIONS = {
-  // 1: (file) => { ...; file.schemaVersion = 2; return file; },
+  // v2: Flowstate, vault and files. Fills defaults only; never removes or rewrites what is there. Idempotent.
+  1: (file) => {
+    const cols = { ...(file.collections || {}) };
+    cols.projects = (cols.projects || []).map(projectDefaults);
+    cols.files ||= [];
+    cols.meta ||= [];
+    return { ...file, collections: cols, schemaVersion: 2 };
+  },
 };
+
+export const emptyProblem = () => ({ statement: "", forWhom: "", successMeasure: { text: "", op: ">=", value: null, unit: "" } });
+export function projectDefaults(p) {
+  if (!p) return p;
+  const out = { ...p };
+  if (!out.problem || typeof out.problem !== "object") out.problem = emptyProblem();
+  else out.problem = { ...emptyProblem(), ...out.problem, successMeasure: { ...emptyProblem().successMeasure, ...(out.problem.successMeasure || {}) } };
+  if (typeof out.writeup !== "string") out.writeup = "";
+  if (!["free", "flow"].includes(out.mode)) out.mode = "free";
+  if (!(out.station >= 1 && out.station <= 7)) out.station = 1;
+  if (!out.stationState || typeof out.stationState !== "object") out.stationState = {};
+  if (!["active", "complete"].includes(out.status)) out.status = "active";
+  if (out.completedAt === undefined) out.completedAt = null;
+  if (out.testResult === undefined) out.testResult = null; // station 6: { value, note }
+  if (out.flowSeenAt === undefined) out.flowSeenAt = null;
+  return out;
+}
 
 export function buildBackup(collections, blobs, now = new Date().toISOString()) {
   return {
@@ -45,6 +69,21 @@ export function mergePlan(file, current) {
     }
   }
   return { list, added, updated, skipped };
+}
+
+// Dry run: validate a backup file and report counts without importing anything.
+export function checkBackup(text) {
+  let file;
+  try { file = JSON.parse(text); } catch { throw new Error("This file is not valid JSON."); }
+  const from = file?.schemaVersion || 1;
+  file = migrate(file);
+  const counts = {};
+  let records = 0;
+  for (const [col, docs] of Object.entries(file.collections || {})) {
+    const n = (docs || []).filter((d) => d && d.id).length;
+    if (n) { counts[col] = n; records += n; }
+  }
+  return { ok: true, fromSchema: from, schemaVersion: file.schemaVersion, exportedAt: file.exportedAt || null, counts, records, photos: (file.blobs || []).length };
 }
 
 export const decodeBlobs = (file) => (file.blobs || []).map(({ data, ...meta }) => ({ ...meta, data: bytesFromB64(data) }));

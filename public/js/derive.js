@@ -127,3 +127,48 @@ const pad = (n) => String(n).padStart(2, "0");
 export const localDay = (iso) => { const x = new Date(iso); return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`; };
 
 export const heatIndex = (n) => (n <= 0 ? 0 : n >= 5 ? 5 : n);
+
+// Backup reminder: due after 10 new entries or 14 days since the last backup (never backed up counts as due once there is data).
+export const BACKUP_ENTRY_LIMIT = 10, BACKUP_DAY_LIMIT = 14;
+export function backupState(settings, hasData, now = Date.now()) {
+  const last = settings?.lastBackupAt || null;
+  const since = settings?.entriesSinceBackup || 0;
+  const days = last ? Math.floor((now - new Date(last)) / 864e5) : null;
+  const due = hasData && (!last || since >= BACKUP_ENTRY_LIMIT || days >= BACKUP_DAY_LIMIT);
+  return { last, since, days, due };
+}
+
+// Proof gap: the first finished task in this project that asked for proof (photo, measurement, snippet)
+// but has no entry with proof yet. Returns { taskId, title, needs } or null.
+export function proofGap(project, tasks, entries, evidence = []) {
+  if (!project) return null;
+  const proofs = proofByEntry(evidence);
+  const mine = live(tasks).filter((t) => t.projectId === project.id && t.done)
+    .sort((a, b) => STAGES.indexOf(a.stage) - STAGES.indexOf(b.stage) || (a.order ?? 0) - (b.order ?? 0));
+  const projEntries = live(entries).filter((e) => e.projectId === project.id);
+  for (const t of mine) {
+    const needs = (t.proofKinds || []).filter((k) => PROOF_KINDS.has(k));
+    if (!needs.length) continue;
+    const linked = projEntries.filter((e) => e.id === t.entryId || e.taskId === t.id);
+    if (!linked.some((e) => proofs.get(e.id))) return { taskId: t.id, title: t.title, needs };
+  }
+  return null;
+}
+
+// Notebook sections: views over entries and files, not new storage.
+export const SECTIONS = [
+  ["problem", "Problem"], ["study", "Study"], ["design-decisions", "Design decisions"], ["models-drawings", "Models and drawings"],
+  ["build-log", "Build log"], ["tests", "Tests and results"], ["reflections", "Reflections"], ["references", "References"], ["appendix-fails", "What broke"],
+];
+const TYPE_SECTION = { build: "build-log", fail: "appendix-fails", decision: "design-decisions", design: "models-drawings", study: "study", experiment: "tests", reflect: "reflections", purchase: "references" };
+export const sectionOf = (e) => e?.section || TYPE_SECTION[e?.type] || "build-log";
+
+// Success measure check for station 6. op is ">=", "<=" or "=". Returns true, false, or null when it cannot be judged.
+export function judge(measure, value) {
+  const v = typeof value === "number" ? value : parseFloat(String(value ?? "").replace(",", "."));
+  const target = measure?.value == null || measure.value === "" ? NaN : +measure.value;
+  if (!Number.isFinite(v) || !Number.isFinite(target)) return null;
+  if (measure.op === "<=") return v <= target;
+  if (measure.op === "=") return Math.abs(v - target) <= Math.max(1e-9, Math.abs(target) * 1e-6);
+  return v >= target;
+}

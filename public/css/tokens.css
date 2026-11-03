@@ -191,10 +191,10 @@
 .body-l { font-family: var(--font-sans); font-size: 18px; line-height: 28px; font-weight: 400; letter-spacing: 0; }
 .body { font-family: var(--font-sans); font-size: 15px; line-height: 24px; font-weight: 400; letter-spacing: 0; }
 .body-s { font-family: var(--font-sans); font-size: 13px; line-height: 20px; font-weight: 400; letter-spacing: 0.005em; }
-.label { font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.08em; }
+.label { font-family: var(--font-sans); font-size: 13px; line-height: 16px; font-weight: 500; letter-spacing: 0.08em; }
 .button { font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: 0.01em; }
 .code { font-family: var(--font-mono); font-size: 14px; line-height: 22px; font-weight: 400; letter-spacing: 0; }
-.code-s { font-family: var(--font-mono); font-size: 12px; line-height: 18px; font-weight: 400; letter-spacing: 0; }
+.code-s { font-family: var(--font-mono); font-size: 13px; line-height: 18px; font-weight: 400; letter-spacing: 0; }
 .numeral-xl { font-family: var(--font-sans); font-size: 72px; line-height: 72px; font-weight: 300; letter-spacing: -0.04em; }
 .numeral { font-family: var(--font-mono); font-size: 24px; line-height: 32px; font-weight: 500; letter-spacing: -0.01em; }
 body { background: var(--surface); color: var(--ink); font: 400 15px/24px var(--font-sans); }

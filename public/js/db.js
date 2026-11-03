@@ -5,7 +5,7 @@ import { localAdapter } from "./db-local.js";
 
 export const COLLECTIONS = [
   "tracks", "projects", "parts", "bomLines", "purchases", "entries", "evidence",
-  "skills", "domains", "resources", "settings", "tasks", "importBatches",
+  "skills", "domains", "resources", "settings", "tasks", "importBatches", "files", "meta",
 ];
 
 let adapter = null, fb = null, handlers = null;
@@ -61,6 +61,12 @@ export async function signIn() {
     if (/popup-blocked|operation-not-supported/.test(e.code || "")) await authMod.signInWithRedirect(auth, provider);
     else throw e;
   }
+}
+// Firebase ID token for the edge functions (/api/*). Local mode has none: files need sync mode.
+export async function idToken() {
+  const u = fb?.auth?.currentUser;
+  if (!u) throw new Error("Files need sync mode. Sign in first; files go to private cloud storage.");
+  return u.getIdToken();
 }
 export const signOut = () => fb && fb.authMod.signOut(fb.auth);
 
