@@ -52,3 +52,8 @@ Checked: unit tests; smoke: autosave survived reload (after fixing statement sav
 Did: export.js buildDocument, export-md.js, export-html.js (light, print CSS A4 18 mm, fonts embedded at export), zip.js (store-only, CRC-32), screens/export.js review screen; golden files in test/golden.
 Checked: golden tests, zip parse + CRC, HTML escaping, no external src, print CSS without fills.
 Next: tester run, then PR.
+
+## 2026-11-03 Tester run and fixes
+Tester: npm test pass; e2e, e2e2, sync failed on old selectors (Lost button now in a menu, Home headline gone, evidence under Add detail); rules.cjs failed: file delete allowed because `{rest=**}` also matches zero segments and overlapped the strict rule; some targets under 44 px.
+Fixed: rules sub-path match needs one more segment; tests updated to the new DOM; brand, backup chip, project diary rows and BOM links at 44 px; restored the original "LV 0 → 1" chip copy.
+Checked: npm test 43/43, e2e, e2e2, axe, sync, rules all pass (emulators, Java).

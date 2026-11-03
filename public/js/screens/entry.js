@@ -143,8 +143,8 @@ export default {
       const on = draft.skillIds.includes(s.id);
       const cur = lv.get(s.id)?.level || 0;
       const p = pend.get(s.id);
-      if (on && p && (hasProof || p.after >= 2)) return html`<button class="chip hotc" data-act="skill" data-id="${s.id}" aria-pressed="true">${s.name} <span class="lv">LV ${p.before} to ${p.after} pending</span></button>`;
-      if (on && p) return html`<button class="chip dash on" data-act="skill" data-id="${s.id}" aria-pressed="true">${s.name} <span class="lv">LV ${p.before} to ${p.after} pending · needs proof for LV 2</span></button>`;
+      if (on && p && (hasProof || p.after >= 2)) return html`<button class="chip hotc" data-act="skill" data-id="${s.id}" aria-pressed="true">${s.name} <span class="lv">LV ${p.before} → ${p.after} pending</span></button>`;
+      if (on && p) return html`<button class="chip dash on" data-act="skill" data-id="${s.id}" aria-pressed="true">${s.name} <span class="lv">LV ${p.before} → ${p.after} pending · needs proof for LV 2</span></button>`;
       if (on && !hasProof && cur < 2) return html`<button class="chip dash on" data-act="skill" data-id="${s.id}" aria-pressed="true">${s.name} <span class="lv">needs proof</span></button>`;
       return html`<button class="chip ${on ? "on" : ""}" data-act="skill" data-id="${s.id}" aria-pressed="${on}">${s.name} <span class="lv">LV ${cur}</span></button>`;
     };

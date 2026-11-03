@@ -40,6 +40,7 @@ const state = (p) => p.evaluate(() => window.__fuse.store.status.state);
     await B.p.goto("http://localhost:8080/?emulator" + `#/entry/new?type=build&project=${pid}`); await B.p.waitForTimeout(2500);
     console.log("   B state while offline:", await state(B.p));
     await B.p.fill("#d-title", "Written offline on the phone");
+    await B.p.evaluate(() => document.querySelectorAll("details").forEach((d) => { d.open = true; }));
     await B.p.click('[data-act="add"][data-k="measurement"]');
     await B.p.fill('[data-addf="measurement"] [name=value]', "5.02"); await B.p.fill('[data-addf="measurement"] [name=unit]', "V");
     await B.p.click('[data-addf="measurement"] button'); await B.p.waitForTimeout(200);

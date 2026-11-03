@@ -496,3 +496,6 @@ body.flow-on .shell { grid-template-columns: minmax(0, 1fr); }
 .verdict { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; font-size: 17px; }
 .verdict .ico { width: 22px; height: 22px; }
 .saved-note { font-size: 13px; color: var(--ink-muted); min-height: 18px; }
+/* targets: every control at least 44 x 44 */
+.brand, .bk-chip, .next-card a.label { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; }
+.panel .stack.s > a.row, .bom a, .bom .tag { min-height: 44px; display: inline-flex; align-items: center; }

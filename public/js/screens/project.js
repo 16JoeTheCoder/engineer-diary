@@ -129,7 +129,7 @@ export default {
 
         <section class="panel">
           <div class="panel-h"><h3>Diary</h3><a class="btn s" href="#/entry/new?project=${p.id}">Log entry</a></div>
-          ${entries.length ? html`<div class="stack s">${entries.slice(0, 12).map((e) => html`<a href="#/entry/${e.id}" class="row" style="text-decoration:none;min-height:40px"><span class="mono subtle">${stamp(e.createdAt)}</span><span class="mono ty-${e.type}" style="font-weight:700;text-transform:uppercase">${e.type}</span><span>${e.title || "(untitled)"}</span>${tctx.proofs.get(e.id) ? html`<span class="chip">${tctx.proofs.get(e.id)} proof</span>` : ""}</a>`)}</div>` : html`<p class="muted">No entries yet.</p>`}
+          ${entries.length ? html`<div class="stack s">${entries.slice(0, 12).map((e) => html`<a href="#/entry/${e.id}" class="row" style="text-decoration:none;min-height:44px"><span class="mono subtle">${stamp(e.createdAt)}</span><span class="mono ty-${e.type}" style="font-weight:700;text-transform:uppercase">${e.type}</span><span>${e.title || "(untitled)"}</span>${tctx.proofs.get(e.id) ? html`<span class="chip">${tctx.proofs.get(e.id)} proof</span>` : ""}</a>`)}</div>` : html`<p class="muted">No entries yet.</p>`}
         </section>
       </div>
 

@@ -25,7 +25,7 @@ service cloud.firestore {
         && !(protectedCol(col) && projectDone(uid, resource.data.get("projectId", null)))
         && !(col == "projects" && resource.data.get("status", "active") == "complete");
     }
-    match /users/{uid}/{col}/{id}/{rest=**} {
+    match /users/{uid}/{col}/{id}/{sub}/{rest=**} {
       allow read, write: if owner(uid);
     }
   }

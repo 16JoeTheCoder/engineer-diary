@@ -19,7 +19,7 @@ const assert = (c, m) => { if (!c) throw new Error("FAIL: " + m); console.log("o
     await ctx.setOffline(true);
     await p.reload(); await p.waitForTimeout(1200);
     const txt = await p.textContent("#main");
-    assert(/proofs logged/.test(txt), "app opens with no signal (service worker + local data)");
+    assert(/Next smallest action/.test(txt), "app opens with no signal (service worker + local data)");
     // offline write
     await p.goto("http://localhost:8080/?local#/parts"); await p.waitForTimeout(500);
     await p.fill("[data-add-part] input", "Jumper wires"); await p.press("[data-add-part] input", "Enter"); await p.waitForTimeout(300);
