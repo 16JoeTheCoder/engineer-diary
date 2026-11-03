@@ -19,6 +19,15 @@ export const stamp = (iso) => (iso ? `${dateOf(iso)} ${timeOf(iso)}` : "");
 
 const idr = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
 export const rp = (n) => (n == null || n === "" || Number.isNaN(+n) ? "Rp —" : `Rp ${idr.format(Math.round(+n))}`);
+// "Rp 201.000", or compact "Rp 201 rb" / "Rp 1,2 jt". Use compact only where the full form cannot fit.
+export function formatRp(n, { compact = false } = {}) {
+  if (n == null || n === "" || Number.isNaN(+n)) return "Rp —";
+  const v = Math.round(+n);
+  if (!compact || Math.abs(v) < 1000) return `Rp ${idr.format(v)}`;
+  const one = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 });
+  if (Math.abs(v) < 1e6) return `Rp ${one.format(v / 1e3)} rb`;
+  return `Rp ${one.format(v / 1e6)} jt`;
+}
 // "85.000" / "85000" / "85k" / "1,2jt" -> 85000
 export const parseIdr = (s) => {
   if (typeof s === "number") return Math.round(s);
@@ -116,3 +125,6 @@ export function coerce(el) {
   if (t === "null") return v || null;
   return String(v).trim();
 }
+
+// Money that never truncates: the full form, swapped for the compact form by a container query when the box is narrow.
+export const moneyHtml = (n) => raw(`<span class="rp-f">${esc(formatRp(n))}</span><span class="rp-c">${esc(formatRp(n, { compact: true }))}</span>`);

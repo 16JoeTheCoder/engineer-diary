@@ -3,7 +3,7 @@ import * as store from "../store.js";
 import { html, raw, stamp, hours } from "../util.js";
 import { proofByEntry } from "../derive.js";
 
-const TYPES = ["build", "fail", "decision", "experiment", "purchase", "reflect"];
+const TYPES = ["build", "fail", "decision", "experiment", "study", "design", "purchase", "reflect"];
 
 export default {
   title: "Log",

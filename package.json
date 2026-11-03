@@ -2,9 +2,13 @@
   "name": "fuse",
   "private": true,
   "type": "module",
-  "description": "Fuse: hardware and robotics learning diary. No build step; package.json exists only to run tests.",
+  "description": "Fuse: hardware and robotics learning diary. No front-end build step; dependencies are for the Cloudflare Pages Functions in functions/ only.",
   "scripts": {
     "test": "node --test test/*.test.js",
     "serve": "python3 -m http.server 8080 --directory public"
+  },
+  "dependencies": {
+    "aws4fetch": "^1.0.20",
+    "jose": "^5.9.6"
   }
 }

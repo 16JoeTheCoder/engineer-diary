@@ -1,9 +1,32 @@
 rules_version = '2';
 // Only the signed-in owner can read or write their own diary. Everything else is denied.
+// Layout is flat: users/{uid}/{collection}/{id}. Records under a project with status "complete" are protected:
+// no client can delete them, archive them, or soft-delete a file. File records can never be deleted by a client.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    function owner(uid) { return request.auth != null && request.auth.uid == uid; }
+    function projectDone(uid, pid) {
+      return pid is string && exists(/databases/$(database)/documents/users/$(uid)/projects/$(pid))
+        && get(/databases/$(database)/documents/users/$(uid)/projects/$(pid)).data.get("status", "active") == "complete";
+    }
+    function becomes(field) {
+      return resource.data.get(field, null) in [null, false] && !(request.resource.data.get(field, null) in [null, false]);
+    }
+    function protectedCol(col) { return col in ["files", "entries", "tasks", "evidence", "bomLines"]; }
+
+    match /users/{uid}/{col}/{id} {
+      allow read, create: if owner(uid);
+      allow update: if owner(uid) && (
+        col == "projects"
+          ? !(resource.data.get("status", "active") == "complete" && becomes("archived"))
+          : !(protectedCol(col) && (becomes("archived") || becomes("deletedAt")) && projectDone(uid, resource.data.get("projectId", null)))
+      );
+      allow delete: if owner(uid) && col != "files"
+        && !(protectedCol(col) && projectDone(uid, resource.data.get("projectId", null)))
+        && !(col == "projects" && resource.data.get("status", "active") == "complete");
+    }
+    match /users/{uid}/{col}/{id}/{rest=**} {
+      allow read, write: if owner(uid);
     }
   }
 }

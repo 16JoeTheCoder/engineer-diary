@@ -3,7 +3,7 @@
 import * as db from "./db.js";
 import { uid, nowIso } from "./util.js";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 const state = new Map(); // col -> Map(id -> doc)
 const listeners = new Set();
 let recorder = null;

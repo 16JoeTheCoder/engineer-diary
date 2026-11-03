@@ -1,0 +1,255 @@
+{
+  "meta": {
+    "title": "Line-follower v1",
+    "track": "Robotics",
+    "exported": "2026-11-03",
+    "entries": 5,
+    "first_entry": "2026-10-02",
+    "last_entry": "2026-10-06",
+    "budget_cap_idr": 350000,
+    "spent_idr": 65000,
+    "success_measure": "Laps without leaving the line (>= 3 laps)",
+    "result": "3 laps (Met)",
+    "skills": [
+      {
+        "name": "PID control",
+        "level": 2,
+        "proofs": 1
+      }
+    ],
+    "variant": "portfolio"
+  },
+  "glance": {
+    "problem": "My robot leaves the line on every bend.",
+    "result": {
+      "value": "3",
+      "unit": "laps",
+      "verdict": "Met"
+    },
+    "measure": "Laps without leaving the line",
+    "hero": {
+      "type": "figure",
+      "n": 1,
+      "caption": "Headers",
+      "alt": "Headers",
+      "blobId": "b1",
+      "path": "assets/fig-01.jpg",
+      "date": "2026-10-05"
+    },
+    "skills": [
+      {
+        "name": "PID control",
+        "level": 2,
+        "proofs": 1
+      }
+    ],
+    "cost": "Rp 65.000",
+    "dates": {
+      "first": "2026-10-02",
+      "last": "2026-10-06"
+    }
+  },
+  "chapters": [
+    {
+      "id": "ch-1",
+      "title": "Problem",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "My robot leaves the line on every bend."
+        },
+        {
+          "type": "p",
+          "text": "For: Me"
+        },
+        {
+          "type": "p",
+          "text": "Success measure: Laps without leaving the line (>= 3 laps)"
+        }
+      ]
+    },
+    {
+      "id": "ch-2",
+      "title": "Study",
+      "blocks": [
+        {
+          "type": "h",
+          "text": "PID"
+        },
+        {
+          "type": "p",
+          "text": "Feedback control."
+        },
+        {
+          "type": "equation",
+          "text": "u = Kp e"
+        }
+      ]
+    },
+    {
+      "id": "ch-3",
+      "title": "Design",
+      "blocks": [
+        {
+          "type": "decision",
+          "date": "2026-10-03",
+          "title": "ESP32",
+          "context": "Which board?",
+          "options": [
+            "Arduino Nano",
+            "ESP32"
+          ],
+          "choice": "ESP32",
+          "why": "More PWM pins.",
+          "changeMyMind": "If Wi-Fi drew too much current."
+        },
+        {
+          "type": "p",
+          "text": "Models and drawings: chassis.stl (Chassis)."
+        }
+      ]
+    },
+    {
+      "id": "ch-4",
+      "title": "Plan and order",
+      "blocks": [
+        {
+          "type": "table",
+          "head": [
+            "Part",
+            "Qty",
+            "Planned"
+          ],
+          "rows": [
+            [
+              "ESP32 DevKit",
+              "1",
+              "Rp 65.000"
+            ]
+          ]
+        },
+        {
+          "type": "p",
+          "text": "Planned Rp 65.000, spent Rp 65.000, against a cap of Rp 350.000."
+        }
+      ]
+    },
+    {
+      "id": "ch-5",
+      "title": "Build",
+      "blocks": [
+        {
+          "type": "p",
+          "date": "2026-10-04",
+          "lead": "Overshoot",
+          "text": "Leaves the line. Fix: Kd 0.3."
+        },
+        {
+          "type": "p",
+          "date": "2026-10-05",
+          "lead": "Soldered headers",
+          "text": "Tinned the tip. (Figure 1)"
+        },
+        {
+          "type": "figure",
+          "n": 1,
+          "caption": "Headers",
+          "alt": "Headers",
+          "blobId": "b1",
+          "path": "assets/fig-01.jpg",
+          "date": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "id": "ch-6",
+      "title": "Test",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "The measure: Laps without leaving the line (>= 3 laps)."
+        },
+        {
+          "type": "result",
+          "value": "3",
+          "unit": "laps",
+          "verdict": "Met",
+          "note": "Three runs on the A3 oval."
+        }
+      ]
+    },
+    {
+      "id": "ch-7",
+      "title": "Write-up",
+      "blocks": [
+        {
+          "type": "h",
+          "text": "Problem"
+        },
+        {
+          "type": "p",
+          "text": "My robot leaves the line."
+        },
+        {
+          "type": "p",
+          "text": "I tuned it."
+        }
+      ]
+    }
+  ],
+  "figures": [
+    {
+      "type": "figure",
+      "n": 1,
+      "caption": "Headers",
+      "alt": "Headers",
+      "blobId": "b1",
+      "path": "assets/fig-01.jpg",
+      "date": "2026-10-05"
+    }
+  ],
+  "appendix": {
+    "fails": [
+      {
+        "date": "2026-10-04",
+        "title": "Overshoot",
+        "symptom": "Leaves the line.",
+        "cause": "No damping.",
+        "fix": "Kd 0.3."
+      }
+    ],
+    "parts": [
+      {
+        "date": "2026-10-03",
+        "name": "ESP32 DevKit",
+        "qty": 1,
+        "price": "Rp 65.000",
+        "shop": "Shopee"
+      }
+    ],
+    "references": [
+      {
+        "title": "PID primer",
+        "type": "article",
+        "url": "https://example.com/pid",
+        "note": ""
+      }
+    ],
+    "files": [
+      {
+        "name": "chassis.stl",
+        "size": 1000,
+        "section": "models-drawings",
+        "caption": "Chassis"
+      }
+    ],
+    "log": [],
+    "parked": []
+  },
+  "provenance": {
+    "exported": "2026-11-03",
+    "entries": 5,
+    "first": "2026-10-02",
+    "last": "2026-10-06"
+  }
+}

@@ -30,6 +30,11 @@ const P = {
   copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>', file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/>',
   pin: '<path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/>',
+  alert: '<path d="M12 3 2 21h20Z"/><path d="M12 10v5M12 18h.01"/>',
+  more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
+  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  study: '<path d="M2 7l10-4 10 4-10 4Z"/><path d="M6 9v6c0 1.5 3 3 6 3s6-1.5 6-3V9"/>',
+  design: '<path d="M3 21l3-1 12-12-2-2L4 18Z"/><path d="M14 6l2 2"/><path d="M3 3h7M3 3v7"/>',
   external: '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
 };
 export const icon = (name, cls = "ico") => raw(`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[name] || ""}</svg>`);

@@ -5,6 +5,7 @@ import * as A from "./actions.js";
 import { html, raw, esc, dateOf, coerce } from "./util.js";
 import { icon, toast, modal } from "./ui.js";
 import { search } from "./search.js";
+import { backupState } from "./derive.js";
 import home from "./screens/home.js";
 import projects from "./screens/projects.js";
 import project from "./screens/project.js";
@@ -14,8 +15,10 @@ import log from "./screens/log.js";
 import skills from "./screens/skills.js";
 import importer from "./screens/importer.js";
 import { library, archive, settings } from "./screens/more.js";
+import flow from "./screens/flow.js";
+import exporter from "./screens/export.js";
 
-const SCREENS = { home, projects, p: project, parts, entry, log, skills, import: importer, library, archive, settings };
+const SCREENS = { home, projects, p: project, parts, entry, log, skills, import: importer, library, archive, settings, flow, export: exporter };
 const NAV = [
   ["home", "Home", "home"], ["projects", "Projects", "folder"], ["log", "Log", "list"], ["parts", "Parts", "box"],
   ["skills", "Skills", "zap"], ["import", "Import a plan", "upload"], ["library", "Library", "book"], ["archive", "Archive", "archive"], ["settings", "Settings", "settings"],
@@ -40,10 +43,17 @@ function syncPill() {
   return html`<span class="sync" data-s="${s.state}" role="status" title="${s.error || ""}"><i></i>${words[s.state] || s.state}</span>`;
 }
 
+// One backup status, one place: calm chip in the header, amber when a backup is due.
+function backupChip() {
+  const hasData = store.all("entries").length + store.all("parts").length > 0;
+  const b = backupState(store.settings(), hasData);
+  const word = b.due ? (b.last ? "Backup due" : "No backup yet") : b.last ? `Backup ${dateOf(b.last)}` : "Backup";
+  return html`<button class="bk-chip" data-act="export-backup" data-due="${b.due}" title="Export a backup now">${b.due ? icon("alert") : icon("check")}<span>${word}</span></button>`;
+}
+
 function shell() {
   const r = route();
   const cur = (n) => (r.name === n || (n === "projects" && r.name === "p") ? raw('aria-current="page"') : "");
-  const s = store.settings();
   return html`
   <div class="shell">
     <aside class="side" aria-label="Main">
@@ -53,13 +63,14 @@ function shell() {
       <div class="grow"></div>
       <div class="foot">
         <span id="sync-slot">${syncPill()}</span>
-        <span class="muted mono">Last backup: ${s.lastBackupAt ? dateOf(s.lastBackupAt) : "never"}</span>
+        <span class="bk-slot">${backupChip()}</span>
       </div>
     </aside>
     <header class="topbar">
       <a class="brand" href="#/home"><img src="assets/logos/tab-small.svg" alt="" width="16" height="28"><span class="app">Fuse</span></a>
       <span id="sync-slot-s">${syncPill()}</span>
       <span class="grow"></span>
+      <span class="bk-slot">${backupChip()}</span>
       <button class="btn icon ghost" data-act="search" aria-label="Search">${icon("search")}</button>
       <button class="btn icon ghost" data-act="menu" aria-label="Menu">${icon("menu")}</button>
     </header>
@@ -96,6 +107,7 @@ function applyTheme(dark) {
   else if (t === "auto") delete root.dataset.theme;
   else root.dataset.theme = t;
   document.body.classList.toggle("stage-home", !!dark);
+  document.body.classList.toggle("flow-on", route().name === "flow");
   const meta = document.querySelector('meta[name="theme-color"]');
   meta?.setAttribute("content", getComputedStyle(document.body).backgroundColor);
 }
@@ -111,8 +123,7 @@ export function render() {
     for (const id of ["sync-slot", "sync-slot-s"]) { const el = document.getElementById(id); if (el) el.innerHTML = String(syncPill()); }
     const cur = (n) => r.name === n || (n === "projects" && r.name === "p");
     app.querySelectorAll(".nav a, .bottombar a").forEach((a) => { const n = a.getAttribute("href").slice(2); n && cur(n) ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"); });
-    const lb = app.querySelector(".side .foot .mono");
-    if (lb) lb.textContent = `Last backup: ${store.settings().lastBackupAt ? dateOf(store.settings().lastBackupAt) : "never"}`;
+    app.querySelectorAll(".bk-slot").forEach((el) => { el.innerHTML = String(backupChip()); });
   }
   const key = r.name + r.id;
   const sameRoute = key === lastRouteKey;
@@ -223,10 +234,11 @@ export function openSearch(q = "") {
 }
 
 // ---------- sheets ----------
-export const TYPES = [["build", "Build"], ["fail", "Fail"], ["decision", "Decision"], ["experiment", "Experiment"], ["purchase", "Purchase"], ["reflect", "Reflect"]];
+export const TYPES = [["build", "Build"], ["fail", "Fail"], ["decision", "Decision"], ["experiment", "Experiment"], ["study", "Study"], ["design", "Design"], ["purchase", "Purchase"], ["reflect", "Reflect"]];
 function quickSheet() {
+  const pid = A.activeProject()?.id;
   modal(String(html`<div class="modal-h"><h2>Log an entry</h2><button class="btn icon ghost" data-close aria-label="Close">${icon("x")}</button></div>
-    <div class="quick">${TYPES.map(([t, l]) => html`<a href="#/entry/new?type=${t}" class="ty-${t}" data-close>${icon(t)}${l}</a>`)}</div>`), { label: "Log an entry" });
+    <div class="quick">${TYPES.map(([t, l]) => html`<a href="#/entry/new?type=${t}${pid ? `&project=${pid}` : ""}" class="ty-${t}" data-close>${icon(t)}${l}</a>`)}</div>`), { label: "Log an entry" });
 }
 function menuSheet() {
   modal(String(html`<div class="modal-h"><h2>Menu</h2><button class="btn icon ghost" data-close aria-label="Close">${icon("x")}</button></div>

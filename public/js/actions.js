@@ -4,7 +4,8 @@ import * as db from "./db.js";
 import { nowIso, today, norm, uid, download } from "./util.js";
 import { skillLevels, STAGES } from "./derive.js";
 import { toast } from "./ui.js";
-import { buildBackup, migrate, mergePlan, decodeBlobs } from "./backup.js";
+import { buildBackup, migrate, mergePlan, decodeBlobs, projectDefaults } from "./backup.js";
+import { hashPasscode, verifyPasscode } from "./security.js";
 import { planToRecords, undoRecords } from "../import/commit.js";
 
 export const PART_STATUSES = ["wishlist", "planned", "ordered", "arrived", "tested", "in_use", "spare", "lost", "retired"];
@@ -77,7 +78,7 @@ export function recordPurchase({ partId, name, projectId = null, priceIdr, qty =
 export function createProject(name, fields = {}) {
   let track = store.all("tracks")[0];
   if (!track) track = store.add("tracks", { name: "Robotics", color: "#FF6A1A" });
-  const p = store.add("projects", { trackId: track.id, name, summary: "", stage: "plan", stageDates: { plan: today() }, budgetCapIdr: store.settings().defaultBudgetIdr || null,
+  const p = store.add("projects", { ...projectDefaults({}), trackId: track.id, name, summary: "", stage: "plan", stageDates: { plan: today() }, budgetCapIdr: store.settings().defaultBudgetIdr || null,
     aims: [], nextAction: "", risks: [], closedAt: null, ...fields });
   store.saveSettings({ activeProjectId: p.id });
   return p;
@@ -127,7 +128,15 @@ export function moveTask(id, dir) {
   store.commit(list.map((x, k) => ({ col: "tasks", doc: { ...x, order: k, updatedAt: now } })).filter((x, k) => list[k].order !== k || k === i || k === j)).catch(() => {});
 }
 
+// A completed project is protected: nothing under it can be archived or deleted from the app.
+export function isLocked(col, id) {
+  const d = store.get(col, id);
+  const pid = col === "projects" ? id : col === "evidence" ? store.get("entries", d?.entryId)?.projectId : d?.projectId;
+  return store.get("projects", pid)?.status === "complete";
+}
+
 export function archiveWithUndo(col, id, label) {
+  if (isLocked(col, id)) { toast("This project is complete and locked. Nothing in it can be archived."); return; }
   const { undo } = store.undoable(() => store.archive(col, id));
   toast(`${label} archived.`, { undo });
 }
@@ -183,6 +192,7 @@ export async function saveEntry(draft) {
     if (task) list.push({ col: "tasks", doc: { ...task, entryId: entry.id, done: true, doneAt: task.doneAt || t, updatedAt: t } });
   }
   await store.commit(list).catch(() => {});
+  if (!existing) store.saveSettings({ entriesSinceBackup: (store.settings().entriesSinceBackup || 0) + 1 });
   return entry;
 }
 
@@ -208,7 +218,28 @@ export function reconcilePeaks() {
     const l = lv.get(s.id);
     if (l && l.computed > (s.peakLevel || 0)) list.push({ col: "skills", doc: { ...s, peakLevel: l.computed, updatedAt: nowIso() } });
   }
+  // live schema v2 upgrade: fill project defaults once (same as the backup migration)
+  for (const p of store.all("projects", { archived: "any" })) if (!p.status || !p.problem) list.push({ col: "projects", doc: { ...projectDefaults(p), updatedAt: nowIso() } });
   if (list.length) store.commit(list).catch(() => {});
+}
+
+// ---------- passcode, complete and reopen ----------
+export async function setPasscode(code) {
+  const rec = await hashPasscode(code);
+  const cur = store.get("meta", "security");
+  const t = nowIso();
+  await store.commit([{ col: "meta", doc: { id: "security", createdAt: cur?.createdAt || t, archived: false, ...rec, updatedAt: t } }]).catch(() => {});
+}
+export const checkPasscode = (code) => verifyPasscode(code, store.get("meta", "security"));
+
+export function completeProject(id) {
+  const t = nowIso();
+  return store.update("projects", id, { status: "complete", completedAt: t });
+}
+export function reopenProject(id) {
+  const p = store.get("projects", id);
+  store.update("projects", id, { status: "active", completedAt: null });
+  store.add("entries", { projectId: id, type: "reflect", title: "Reopened project", fields: {}, bodyMd: `Reopened on ${today()} after it was marked complete on ${(p.completedAt || "").slice(0, 10)}.`, tags: [], partIds: [], skillIds: [], resourceIds: [], sessionSec: 0, taskId: null });
 }
 
 // ---------- backup ----------
@@ -216,7 +247,7 @@ export async function exportBackup() {
   const blobs = await db.allBlobs();
   const file = buildBackup(store.snapshot(), blobs);
   download(`fuse-backup-${today()}.json`, JSON.stringify(file));
-  store.saveSettings({ lastBackupAt: nowIso() });
+  store.saveSettings({ lastBackupAt: nowIso(), entriesSinceBackup: 0 });
   toast(`Backup saved: ${Object.values(file.collections).reduce((n, a) => n + a.length, 0)} records, ${blobs.length / 2 | 0} photos.`, { ms: 5000 });
 }
 
