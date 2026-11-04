@@ -1,12 +1,21 @@
-// Paste your Firebase web config here (Firebase console > Project settings > Your apps > Web app > Config).
-// It is not a secret: the Firestore rules are the protection.
-// While this is null the app runs in local mode: data stays on this device, nothing syncs.
-export const firebaseConfig = null;
-/* Example:
-export const firebaseConfig = {
-  apiKey: "AIza...",
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyD3_b_SXpMkNqZ0VNJ3zjOhdd0VRZCOWbo",
   authDomain: "fuse-josef.firebaseapp.com",
   projectId: "fuse-josef",
-  appId: "1:1234567890:web:abcdef",
+  storageBucket: "fuse-josef.firebasestorage.app",
+  messagingSenderId: "1073008091609",
+  appId: "1:1073008091609:web:adece2846c5393c9e379c8",
+  measurementId: "G-3212PDM0J6"
 };
-*/
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
